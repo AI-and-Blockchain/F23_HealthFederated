@@ -20,3 +20,20 @@ Our project uses Vertical Federated Learning for binary classification of medica
 3. All the extracted features will be combined into a single fusion vector using a concatenate layer.
 4. The combined features represent high-level functionality such as sharpening, textures, roundness, and compactness of the CXR images.
 5. Finally, the combined features then feed into the central server for the training and classification purpose.
+
+# Blockchain Component
+
+**Implementation:** A smart contract written in Solidity capable of receiving client weight updates, aggregating them and sending the aggregation to a global model. 
+
+**The smart contract will:**
+
+1. Allow for clients to send their nosy weight updates
+
+2. Receive the weights and sum them together
+
+3. Allow for a global model to receive the concatenated weights from the client
+
+The smart contract will not perform any training, since it will have high gas costs
+
+**Rationale:** Allows for multiple hospitals to interface with the model without the need for a centralized authority. Blockchain will provide transparency and verifiability, and local differential privacy mechanisms will ensure privacy. 
+
