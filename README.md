@@ -13,7 +13,7 @@ Our project uses Vertical Federated Learning for binary classification of medica
 ![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/Proj-Checkin-02-files/Sequence_Diagram.png)
 
 # Centralized Feature Fusion Diagram
-![alt text] (https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/Proj-Checkin-02-files/Centralized%20Model.png)
+![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/Proj-Checkin-02-files/Centralized%20Model.png)
 
 1. At first, three CNN pre-trained models, i.e., DenseNet169, ResNet50, and VGG19, with the pre-trained weights will be adopted.
 2. We will use this model without their classification layers because we want to use these for feature extraction part only.
