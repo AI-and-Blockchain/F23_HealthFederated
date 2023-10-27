@@ -21,6 +21,21 @@ Our project uses Vertical Federated Learning for binary classification of medica
 4. The combined features represent high-level functionality such as sharpening, textures, roundness, and compactness of the CXR images.
 5. Finally, the combined features then feed into the central server for the training and classification purpose.
 
+# Vertical Federated Learning Algorithm
+
+We will use synthesized vertically distributed dataset for testing purpose. Below is a description of our Vertical Federated Learning algorithm.
+
+In each training round:
+1. A minibatch is randomly chosen for training. The IDs of the chosen samples are shared among server and clients
+2. Each client generates model weights using their local model and private data.
+3. Each client adds differential privacy noise to their model weights.
+4. Each client sends their noisy model weights to the smart contract for aggregation.
+5. Smart contract sums the noisy model weights and sends to the server.
+6. Server calculates the gradient w.r.t the weight sum and sends to parties.
+7. Server calculates the gradient w.r.t the global parameters and updates the global parameters.
+8. Each client calculates the gradient w.r.t their local parameters using the chain rule and updates their local parameters.
+
+
 # Blockchain Component
 
 **Implementation:** A smart contract written in Solidity capable of receiving client weight updates, aggregating them and sending the aggregation to a global model. 
