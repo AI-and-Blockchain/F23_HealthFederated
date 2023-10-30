@@ -42,11 +42,11 @@ In each training round:
 
 **The smart contract will:**
 
-1. Allow for clients to send their nosy weight updates
+1. Allow for clients to send their noisy weight updates
 
 2. Receive the weights and sum them together
 
-3. Allow for a global model to receive the concatenated weights from the client
+3. Allow for a global model to receive the aggregated weights from the clients
 
 The smart contract will not perform any training, since it will have high gas costs
 
