@@ -19,6 +19,12 @@ contract FederatedAggregator {
     
     Client[] clients;
     Server public server;
+    
+    // keep track of amount of times aggregation has been called
+    uint256 aggregationRounds = 0;
+
+    // Maximum Client count
+    uint256 MAX_CLIENTS = 4;
 
     // initialise server in constructor
     constructor() {
@@ -29,6 +35,8 @@ contract FederatedAggregator {
     // function to create a client object and add it to the list
     function addParticipant() public {
         require(msg.sender != address(0), "Invalid client address");
+        require(aggregationRounds == 0, "Communication Rounds have started. Cannot add new clients.");
+        require(clients.length <= MAX_CLIENTS, "Max Client Count reached. Cannot add any more clients.");
         clients.push(Client({clientAddress: msg.sender, modelParameters: new uint256[](10)}));
     }
 
