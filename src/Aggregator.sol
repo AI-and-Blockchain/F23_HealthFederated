@@ -40,6 +40,10 @@ contract FederatedAggregator {
         clients.push(Client({clientAddress: msg.sender, modelParameters: new uint256[](10)}));
     }
 
+    function getAggregatedWeights()  view public returns (uint256[] memory) {
+        return server.aggregatedParameters;
+    }
+
     // function to update params for a client
     // if the message sender is a client, will update params with the provided arg
     function updateParticipantParameters(uint256[] memory newParameters) public {
