@@ -2,7 +2,20 @@
 VFL algorithm
 """
 
+import numpy as np
 import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+import torchvision
+import torchvision.transforms as transforms
+from torch.autograd import Variable
+from torch.distributions.binomial import Binomial
+
+from server_model import ServerModel
+from client_model import ClientModel
+
+import argparse
+import pickle
 
 # Set up input arguments
 parser = argparse.ArgumentParser(description='MVCNN-PyTorch')
@@ -54,14 +67,20 @@ def save_checkpoint(state, filename):
     torch.save(state, filename)
 
 ''' Load dataset task '''
-dset_train = None
-train_loader = None
+transform = transforms.Compose([transforms.Resize(256), transforms.ToTensor(),])
 
-dset_val = None
-test_loader = None
+# Slit images and save to folders
+# TODO
 
-classes = dset_train.classes
-print(len(classes), classes)
+train_loadser_list = []
+test_loader_list =[]
+for i in range(args.num_clients):
+    train_data = torchvision.datasets.ImageFolder(root="C:\Users\huyfr\Documents\AI & Blockchain\project\Covid19Datasets\train\client{i}", transform=transform)
+    train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True,  num_workers=4)
+    train_loadser_list.append(train_loader)
+    test_data = torchvision.datasets.ImageFolder(root="C:\Users\huyfr\Documents\AI & Blockchain\project\Covid19Datasets\test\client{i}", transform=transform)
+    test_loader  = DataLoader(test_data, batch_size=args.batch_size, shuffle=True, num_workers=4)
+    test_loader_list.append(test_loader)
 
 losses = []
 accs_train = []
@@ -74,26 +93,23 @@ start_epoch = 0
 models = []
 optimizers = []
 
-
-
 '''
 Task 2: Initialize the neural network model for clients and server
 '''
 # Make models for each client
 for i in range(num_clients+1):
     if i == num_clients:
-        model = None
+        model = ClientModel()
     else:
-        model = None
-    optimizer = None
+        model = ServerModel()
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     models.append(model)
     optimizers.append(optimizer)
 
-# Loss and Optimizer
+criterion = nn.BCEWithLogitsLoss() # Binary cross-entropy
+#lr_scheduler = ExponentialLR(optimizer, gamma=0.9)
 n_epochs = args.epochs
-criterion = nn.CrossEntropyLoss()
-coords_per = 16
 
 '''
 Optionally resume from a checkpoint.
@@ -147,6 +163,7 @@ def train(models, optimizers):
     server_model = models[-1]
     #server_optimizer = optimizers[-1]
 
+    # generate embeddings
     Hs = np.empty((len(train_loader), num_clients), dtype=object)
     Hs.fill([])
     grads_Hs = np.empty((num_clients), dtype=object)
