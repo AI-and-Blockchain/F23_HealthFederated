@@ -80,9 +80,9 @@ class VGG19(nn.Module):
 class ClientModel(nn.Module):
     def __init__(self):
         super(ClientModel, self).__init__()
-        self.densenet = DenseNet169()
-        self.resnet = ResNet50()
-        self.vgg = VGG19()
+        self.densenet = models.densenet169(pretrained=True)
+        self.resnet = models.resnet50(pretrained=True)
+        self.vgg = models.vgg19(pretrained=True)
 
         # Remove the classification layers (fully connected layers)
         self.densenet = nn.Sequential(*list(self.densenet.children())[:-1])
