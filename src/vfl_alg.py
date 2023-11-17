@@ -1,52 +1,108 @@
-"""
-VFL algorithm
-"""
-
 import numpy as np
+from PIL import Image
+import os
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
+from torch.optim.lr_scheduler import ExponentialLR
 from torch.autograd import Variable
 from torch.distributions.binomial import Binomial
 
-from server_model import ServerModel
-from client_model import ClientModel
+class ClientModel(nn.Module):
+    def __init__(self):
+        super(ClientModel, self).__init__()
+        self.densenet = torchvision.models.densenet169(pretrained=True)
+        self.resnet = torchvision.models.resnet50(pretrained=True)
+        self.vgg = torchvision.models.vgg19(pretrained=True)
 
-import argparse
-import pickle
+        # Remove the classification layers (fully connected layers)
+        self.densenet = nn.Sequential(*list(self.densenet.children())[:-1])
+        self.resnet = nn.Sequential(*list(self.resnet.children())[:-1])
+        self.vgg = nn.Sequential(*list(self.vgg.children())[:-1])
 
-# Set up input arguments
-parser = argparse.ArgumentParser(description='MVCNN-PyTorch')
-parser.add_argument('data', metavar='DIR', help='path to dataset', default='./')
-parser.add_argument('--num_clients', type=int, help='Number of clients to split data between vertically',
-                        default=4)
-parser.add_argument('--epochs', default=600, type=int, metavar='N', help='number of total epochs to run (default: 600)')
-parser.add_argument('-b', '--batch-size', default=100, type=int,
-                    metavar='N', help='mini-batch size (default: 100)')
-parser.add_argument('--lr', '--learning-rate', default=0.01, type=float,
-                    metavar='LR', help='initial learning rate (default: 0.01)')
-parser.add_argument('--quant_bin', type=int, help='Number of quantization buckets', default=0)
-parser.add_argument('--theta', default=0.25, type=float,
-                    metavar='T', help='theta value (default: 0.25)')
-parser.add_argument('-r', '--resume', type=str, help='path to latest checkpoint (default: none)', default='')
+    def forward(self, x):
+        x1 = self.densenet(x)
+        x2 = self.resnet(x)
+        x3 = self.vgg(x)
 
-# Parse input arguments
-args = parser.parse_args()
+        # Flatten and concatenate
+        x1 = x1.view(x1.size(0), -1)
+        x2 = x2.view(x2.size(0), -1)
+        x3 = x3.view(x3.size(0), -1)
+        x = torch.cat((x1, x2, x3), dim=1)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        return x
 
-num_clients = args.num_clients
+class ServerModel(nn.Module):
+    def __init__(self):
+        super(ServerModel, self).__init__()
+        self.densenet = torchvision.models.densenet169(pretrained=True)
+        self.resnet = torchvision.models.resnet50(pretrained=True)
+        self.vgg = torchvision.models.vgg19(pretrained=True)
 
-'''
-Task 1: Differential Privacy algorithm to add noise and quantize each values into integer to reduce communication cost.
-quantize() function adds noises at the client side.
-dequantize() function happends at the server side to convert the integer model update sum to an equivalent floating point model update sum.
-This algorithm is proven to reduce significant communication cost with negligible lost in accuracy.
-Linh: This may need modification, I can take care of this task.
-'''
+        # Remove the classification layers (fully connected layers)
+        self.densenet = nn.Sequential(*list(self.densenet.children())[:-1])
+        self.resnet = nn.Sequential(*list(self.resnet.children())[:-1])
+        self.vgg = nn.Sequential(*list(self.vgg.children())[:-1])
 
+        # Define new classification layers
+        self.fc = nn.Sequential(
+            nn.Dropout(0.4),
+            nn.BatchNorm1d(53760), # Output features from densenet + resnet + vgg
+            nn.Linear(53760, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(128, 2),
+        )
+
+    def forward(self, x):
+        x1 = self.densenet(x)
+        x2 = self.resnet(x)
+        x3 = self.vgg(x)
+
+        # Flatten and concatenate
+        x1 = x1.view(x1.size(0), -1)
+        x2 = x2.view(x2.size(0), -1)
+        x3 = x3.view(x3.size(0), -1)
+        x = torch.cat((x1, x2, x3), dim=1)
+
+        x = self.fc(x)
+        return x
+
+# Arguments and parameters
+num_clients = 4
+lr = 0.0001
+lr_decay = 0.9
+batch_size = 32
+num_epochs = 5
+quant_bin = 8 # quantization parameter
+theta = 0.15 # DP noise parameter
+
+# Make models for each client
+models = []
+optimizers = []
+schedulers = []
+
+for i in range(num_clients+1):
+    if i == num_clients:
+        model = ClientModel()
+    else:
+        model = ServerModel()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    scheduler = ExponentialLR(optimizer, gamma=lr_decay)
+    
+    models.append(model)
+    optimizers.append(optimizer)
+    schedulers.append(scheduler)
+
+criterion = nn.BCEWithLogitsLoss() # Binary cross-entropy
+
+# Discrete differential privacy noise
 def quantize(x, theta, m):
     p = torch.add(0.5, torch.mul(theta, x))
 
@@ -63,249 +119,155 @@ def dequantize(q, theta, m, n):
     sum = torch.div(det, theta * m)
     return sum
 
-def save_checkpoint(state, filename):
-    torch.save(state, filename)
+# Load datasets
+# each image has size 128x128
+transform = transforms.ToTensor()
 
-''' Load dataset task '''
-transform = transforms.Compose([transforms.Resize(256), transforms.ToTensor(),])
+train_loaders = []
+val_loaders = []
+test_loaders =[]
 
-# Slit images and save to folders
-# TODO
+for i in range(num_clients):
+    train_data = torchvision.datasets.ImageFolder(root=f'C:/Users/huyfr/Documents/AI&Blockchain/project/SplitCovid19/client{i}', transform=transform)
+    train_data = torch.utils.data.Subset(train_data, range(10))
+    val_data = torch.utils.data.Subset(train_data, range(10, 20))
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False,  num_workers=4)
+    train_loaders.append(train_loader)
+    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False,  num_workers=4)
+    val_loaders.append(val_loader)
+    test_data = torchvision.datasets.ImageFolder(root=f'C:/Users/huyfr/Documents/AI&Blockchain/project/SplitCovid19/client{i}', transform=transform)
+    test_data = torch.utils.data.Subset(test_data, range(10))
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
+    test_loaders.append(test_loader)
 
-train_loadser_list = []
-test_loader_list =[]
-for i in range(args.num_clients):
-    train_data = torchvision.datasets.ImageFolder(root="C:\Users\huyfr\Documents\AI & Blockchain\project\Covid19Datasets\train\client{i}", transform=transform)
-    train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True,  num_workers=4)
-    train_loadser_list.append(train_loader)
-    test_data = torchvision.datasets.ImageFolder(root="C:\Users\huyfr\Documents\AI & Blockchain\project\Covid19Datasets\test\client{i}", transform=transform)
-    test_loader  = DataLoader(test_data, batch_size=args.batch_size, shuffle=True, num_workers=4)
-    test_loader_list.append(test_loader)
-
-losses = []
-accs_train = []
-accs_test = []
-
-best_acc = 0.0
-best_loss = 0.0
-start_epoch = 0
-
-models = []
-optimizers = []
-
-'''
-Task 2: Initialize the neural network model for clients and server
-'''
-# Make models for each client
-for i in range(num_clients+1):
-    if i == num_clients:
-        model = ClientModel()
-    else:
-        model = ServerModel()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-
-    models.append(model)
-    optimizers.append(optimizer)
-
-criterion = nn.BCEWithLogitsLoss() # Binary cross-entropy
-#lr_scheduler = ExponentialLR(optimizer, gamma=0.9)
-n_epochs = args.epochs
-
-'''
-Optionally resume from a checkpoint.
-This is in case the training need to be run multiple times due to time limit on AiMOS.
-Ignore this step for now.
-'''
-if args.resume != '':
-    for i in range(args.num_clients+1):
-        if args.quant_bin == 0:
-            cpfile = os.path.join('checkpoints/{}_{}clients_{}lr_noquant.pth.tar'.format(i, args.num_clients, args.lr))
-        else:
-            cpfile = os.path.join('checkpoints/{}_{}clients_{}lr_{}bins_{}theta.pth.tar'.format(i, args.num_clients, args.lr, args.quant_bin, args.theta))
-        if os.path.isfile(cpfile):
-            print("=> loading checkpoint")
-            # Map model to be loaded to specified single gpu.
-            checkpoint = torch.load(cpfile, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-            start_epoch = checkpoint["epoch"]
-            models[i].load_state_dict(checkpoint["state_dict"])
-            optimizers[i].load_state_dict(checkpoint["optimizer"])
-            losses = pickle.load(open(f'loss_cifar_lr{args.lr}_quant{args.quant_bin}_theta{args.theta}.pkl', 'rb'))
-            accs_train = pickle.load(open(f'accs_train_cifar_lr{args.lr}_quant{args.quant_bin}_theta{args.theta}.pkl', 'rb'))
-            accs_test = pickle.load(open(f'accs_test_cifar_lr{args.lr}_quant{args.quant_bin}_theta{args.theta}.pkl', 'rb'))
-            print("=> loaded checkpoint")
-        else:
-            print("=> no checkpoint found")
-
-'''
-Task 3: Evaluate and save current loss and accuracy
-'''
-def save_eval(models, train_loader, test_loader, losses, accs_train, accs_test, step, train_size):
-    avg_train_acc, avg_loss = eval(models, train_loader)
-    avg_test_acc, _ = eval(models, test_loader)
-
-    losses.append(avg_loss)
-    accs_train.append(avg_train_acc)
-    accs_test.append(avg_test_acc)
-
-    print('Iter [%d/%d]: Test Acc: %.2f - Train Acc: %.2f - Loss: %.4f' 
-            % (step + 1, train_size, avg_test_acc.item(), avg_train_acc.item(), avg_loss.item()))
-
-
-'''
-Task 4: Training algorithm
-'''
-def train(models, optimizers):
-    """
-    Train all clients on all batches 
-    """
-
-    train_size = len(train_loader)
-    server_model = models[-1]
-    #server_optimizer = optimizers[-1]
-
-    # generate embeddings
-    Hs = np.empty((len(train_loader), num_clients), dtype=object)
-    Hs.fill([])
-    grads_Hs = np.empty((num_clients), dtype=object)
-    grads_Hs.fill([])
-
-    for step, (inputs, targets) in enumerate(train_loader):
-        # Convert from list of 3D to 4D
-        inputs = np.stack(inputs, axis=1)
-
-        inputs = torch.from_numpy(inputs)
-
-        inputs, targets = inputs.cuda(device), targets.cuda(device)
-        inputs, targets = Variable(inputs), Variable(targets)
-        # Exchange embeddings
-        H_orig = [None] * num_clients
-        with torch.no_grad():
-            H_nograd = [None] * num_clients
+# train without blockchain
+def train_without_blockchain():
+    
+    targets = None
+    embeddings_grad = [None] * num_clients
+    embeddings_nograd = [None] * num_clients
+    
+    completed = False
+    train_iterators = []
+    for i in range(num_clients):
+        train_iterators.append(iter(train_loaders[i]))
+    
+    while not completed:
+        # At party side
         for i in range(num_clients):
-            # split images into equal portions
-            r = math.floor(i/2)
-            c = i % 2
-            section = coords_per
-            x_local = inputs[:,:,
-                            section*r:section*(r+1),
-                            section*c:section*(c+1)]
-            x_local = torch.transpose(x_local,0,1)
-            H_orig[i] = models[i](x_local)
-            with torch.no_grad():
-                H_nograd[i] = models[i](x_local)
+            # get current batch
+            item = next(train_iterators[i], -1)
             
-            # Compress embedding / Quantization
-            if args.quant_bin > 0:
-                H_nograd[i] = quantize(H_nograd[i], args.theta, args.quant_bin)
+            if item == -1:
+                completed = True
+                break
+            
+            inputs, targets = item
         
-        # embedding summation
-        with torch.no_grad():
-            sum_nograd = torch.sum(torch.stack(H_nograd),axis=0)
-        if args.quant_bin > 0:
-            sum_nograd = dequantize(sum_nograd, args.theta, args.quant_bin, args.num_clients)
-        
-        sum_embedding = torch.sum(torch.stack(H_orig),axis=0)
-        if args.quant_bin > 0:
-            sum_embedding.data = sum_nograd
+            # generate embedding
+            embeddings_grad[i] = models[i](inputs)
+            with torch.no_grad():
+                embeddings_nograd[i] = models[i](inputs)
 
-        # compute output
-        outputs = server_model(sum_embedding)
+            # add differential privacy noise
+            embeddings_nograd[i] = quantize(embeddings_nograd[i], theta, quant_bin)
+        
+        if completed:
+            break
+
+        # At server side
+        with torch.no_grad():
+            sum_nograd = torch.sum(torch.stack(embeddings_nograd),axis=0)
+
+        # dequantize the discrete sum into continuous sum
+        sum_nograd = dequantize(sum_nograd, theta, quant_bin, num_clients)
+        sum_grad = torch.sum(torch.stack(embeddings_grad),axis=0)
+        sum_grad.data = sum_nograd
+
+        # compute outputs
+        outputs = models[num_clients](sum_grad)
         loss = criterion(outputs, targets)
 
-        # compute gradient and do SGD step
-        for i in range(args.num_clients+1):
+        # parties and server compute gradient and do SGD step
+        for i in range(num_clients + 1):
             optimizers[i].zero_grad()
         loss.backward()
-        if next(models[0].parameters()).grad is None:
-            print("No gradient in embedding model!")
-        elif next(models[0].parameters()).grad[0][0][0][0] == 0:
-            print("Zero gradient!")
-        for i in range(args.num_clients+1):
-            optimizers[i].step()
+        for i in range(num_clients + 1):
+            optimizer[i].step()
 
-        if (step + 1) % args.print_freq == 0:
-            print("\tServer Iter [%d/%d] Loss: %.4f" % (step + 1, train_size, loss.item()))
+        # parties and server calculate new learning rate
+        for i in range(num_clients + 1):
+            schedulers[i].step()
 
-
-'''
-Task 5: Calculate loss and accuracy for a given data_loader
-'''
-def eval(models, data_loader):
-    total = 0.0
-    correct = 0.0
-
-    total_loss = 0.0
-    n = 0
-
-    for _, (inputs, targets) in enumerate(data_loader):
-        with torch.no_grad():
-            # Convert from list of 3D to 4D
-            inputs = np.stack(inputs, axis=1)
-
-            inputs = torch.from_numpy(inputs)
-
-            inputs, targets = inputs.cuda(device), targets.cuda(device)
-            inputs, targets = Variable(inputs), Variable(targets)
-
-            # Get current embeddings
-            H_new = [None] * num_clients
-            for i in range(num_clients):
-                # split images into equal portions
-                r = math.floor(i/2)
-                c = i % 2
-                section = coords_per
-                x_local = inputs[:,:,
-                                section*r:section*(r+1),
-                                section*c:section*(c+1)]
-                x_local = torch.transpose(x_local,0,1)
-                H_new[i] = models[i](x_local)
-            # compute output
-            outputs = models[-1](torch.sum(torch.stack(H_new),axis=0))
-            loss = criterion(outputs, targets)
-
-            total_loss += loss
-            n += 1
-
-            _, predicted = torch.max(outputs.data, 1)
-            total += targets.size(0)
-            correct += (predicted.cpu() == targets.cpu()).sum()
-
-    avg_test_acc = 100 * correct / total
-    avg_loss = total_loss / n
-
-    return avg_test_acc, avg_loss
-
-# Get initial loss/accuracy
-if start_epoch == 0:
-    save_eval(models, train_loader, test_loader, losses, accs_train, accs_test, 0, len(train_loader))
-# Training / Eval loop
-train_size = len(train_loader)
-for epoch in range(start_epoch, n_epochs):
-    print('\n-----------------------------------')
-    print(f'Clients: {args.num_clients}, Quant_bin: {args.quant_bin}, Theta: {args.theta}')
-    print('Epoch: [%d/%d]' % (epoch+1, n_epochs))
-    start = time.time()
-
-    train(models, optimizers, epoch)
-    save_eval(models, train_loader, test_loader, losses, accs_train, accs_test, epoch, train_size)
-
-    '''
-    # Uncomment if need to save checkpoint
-    # Checkpoints will be saved to `checkpoints` folder, make sure it exists
-    for i in range(args.num_clients+1):
-        if args.quant_bin == 0:
-            save_filename = os.path.join('checkpoints/cifar_results/{}_{}clients_{}lr_noquant.pth.tar'.format(i, args.num_clients, args.lr))
+# evaluation function for validation and testing
+def evaluate(mode):
+    # validation or testing
+    data_iterators = []
+    for i in range(num_clients):
+        if mode == 'validation':
+            data_iterators.append(iter(val_loaders[i]))
         else:
-            save_filename = os.path.join('checkpoints/cifar_results/{}_{}clients_{}lr_{}bins_{}theta.pth.tar'.format(i, args.num_clients, args.lr, args.quant_bin, args.theta))
-        save_checkpoint(
-            {
-                "epoch": epoch + 1,
-                "state_dict": models[i].state_dict(),
-                "optimizer": optimizers[i].state_dict(),
-            },
-            filename=save_filename,
-        )
-        print(f"saved to '{save_filename}'")
+            data_iterators.append(iter(test_loaders[i]))
+    
+    # initialize variables
+    embeddings = [None] * num_clients
+    targets = None
+    completed = False
+    total = 0
+    correct = 0
+    total_loss = 0
+    n = 0
+    
+    while not completed:
+        # At party side
+        for i in range(num_clients):
+            # get current batch
+            item = next(data_iterators[i], -1)
+            
+            if item == -1:
+                completed = True
+                break
+            
+            inputs, targets = item
 
-    print('Time taken: %.2f sec.' % (time.time() - start))
-    '''
+            # generate embedding
+            embeddings[i] = models[i](inputs)
+        
+        if completed:
+            break
+
+        # At server side
+        embedding_sum = torch.sum(torch.stack(embeddings),axis=0)
+
+        # compute outputs
+        outputs = models[num_clients](embedding_sum)
+        loss = criterion(outputs, targets)
+        _, predicted = torch.max(outputs.data, 1)
+
+        # compute accuracy
+        correct += (predicted == targets).sum()
+        total += targets.size(0)
+
+        # compute loss
+        total_loss += loss
+        n += 1
+
+    accuracy = 100 * correct / total
+    loss = total_loss / n
+
+    return (accuracy, loss)
+
+# initial loss
+test_accuracy, test_loss = evaluate(mode = 'test')
+print('Initial test loss: {:.2f} \t Initial test accuracy: {:.2f}'.format(test_loss, test_accuracy))
+
+# main training loop
+for epoch in range(num_epochs):
+    print('\n-----------------------------------')
+    print('Epoch: [%d/%d]' % (epoch+1, num_epochs))
+
+    train_without_blockchain()
+    val_accuracy, val_loss = evaluate(mode = 'validation')
+    test_accuracy, test_loss = evaluate(mode = 'test')
+    
+    print('Val Loss: {:.2f} \t Val Accuracy: {:.2f} \t Test Loss: {:.2f} \t Test Accuracy: {:.2f}'.format(val_loss, val_accuracy, test_loss, test_accuracy))
