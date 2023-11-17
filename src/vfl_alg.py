@@ -1,7 +1,6 @@
 import numpy as np
 from PIL import Image
 import os
-
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -10,7 +9,6 @@ import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import ExponentialLR
 from torch.autograd import Variable
 from torch.distributions.binomial import Binomial
-
 from models import ClientModel, ServerModel
 
 # Arguments and parameters
@@ -60,8 +58,10 @@ def dequantize(q, theta, m, n):
     return sum
 
 # Load datasets
-# each image has size 128x128
-transform = transforms.ToTensor()
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+    transforms.ToTensor(),])
 
 train_loaders = []
 val_loaders = []
