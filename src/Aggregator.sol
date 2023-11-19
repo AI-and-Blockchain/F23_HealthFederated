@@ -31,7 +31,7 @@ contract FederatedAggregator {
 
     uint256 MAX_CLIENTS = 4;
 
-    // initialise server in constructor
+    // initialize server in constructor
     constructor() {
         owner = msg.sender;
         server = Server({clientCount: 0, maxIndex: 0});
@@ -76,7 +76,7 @@ contract FederatedAggregator {
         }   
     }
     
-    // functiont to aggregate the client params into the global params
+    // function to aggregate the client params into the global params
     function aggregate() public {
         require(clients.length > 0, "No clients available");
         require(msg.sender == owner, "Only the owner can start aggregation");
