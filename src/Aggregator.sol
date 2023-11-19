@@ -76,16 +76,45 @@ contract FederatedAggregator {
         }   
     }
     
-    // functiont to aggregate the client params into the global params using Federated Average
+    // functiont to aggregate the client params into the global params
     function aggregate() public {
-        // require(clients.length > 0, "No clients available");
-        // require(msg.sender == owner, "Only the owner can start aggregation");
-        // TODO: implement new algorithm
+        require(clients.length > 0, "No clients available");
+        require(msg.sender == owner, "Only the owner can start aggregation");
         
+        // clear old params
+        for (uint i = 0;i < server.maxIndex; i++){
+            delete aggregatedParameters[i];
+        }
+
+        // iterate over clients
+        for (uint i = 0;i < clients.length; i++){
+            address clientAddr = clients[i].clientAddress;
+            uint256 clientMaxIndex = clients[i].maxIndex;
+
+            // update server maxIndex if necessary
+            if (clientMaxIndex > server.maxIndex){
+                server.maxIndex = clientMaxIndex;
+            }
+
+            // iterate over client params
+            for (uint j = 0; j < clientMaxIndex; j++){
+                uint256[] memory clientParams = clientParameters[clientAddr][j];
+
+                // initialize array if needed
+                if (aggregatedParameters[j].length == 0){
+                    aggregatedParameters[j] = new uint256[](clientParams.length);
+                }
+                
+                // sum vector-wise
+                for (uint k = 0;k < clientParams.length; k++){
+                    if (k < aggregatedParameters[j].length){
+                        aggregatedParameters[j][k] += clientParams[k];
+                    }
+                }
+            }
+
+        }
+
     }
-
-
-
-
 
 }
