@@ -12,7 +12,7 @@ from torch.distributions.binomial import Binomial
 from models import ClientModel, ServerModel
 
 # Arguments and parameters
-num_clients = 4
+num_clients = 4 # fixed size
 lr = 0.0001
 lr_decay = 0.9
 batch_size = 32
@@ -58,6 +58,7 @@ def dequantize(q, theta, m, n):
     return sum
 
 # Load datasets
+# each image has size 128x128
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
@@ -65,18 +66,18 @@ transform = transforms.Compose([
 
 train_loaders = []
 val_loaders = []
-test_loaders =[]
+test_loaders = []
 
 for i in range(num_clients):
-    train_data = torchvision.datasets.ImageFolder(root=f'/gpfs/u/home/VFLA/VFLAnrnl/scratch/SplitCovid19/client{i}', transform=transform)
-    train_data = torch.utils.data.Subset(train_data, range(10))
-    val_data = torch.utils.data.Subset(train_data, range(10, 20))
+    train_dataset = torchvision.datasets.ImageFolder(root=f'/path-to-folder/SplitCovid19/client{i}/train', transform=transform)
+    train_data = torch.utils.data.Subset(train_dataset, range(32))
+    val_data = torch.utils.data.Subset(train_dataset, range(32, 64))
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False,  num_workers=4)
     train_loaders.append(train_loader)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False,  num_workers=4)
     val_loaders.append(val_loader)
-    test_data = torchvision.datasets.ImageFolder(root=f'/gpfs/u/home/VFLA/VFLAnrnl/scratch/SplitCovid19/client{i}', transform=transform)
-    test_data = torch.utils.data.Subset(test_data, range(10))
+    test_data = torchvision.datasets.ImageFolder(root=f'/path-to-folder/SplitCovid19/client{i}/test', transform=transform)
+    test_data = torch.utils.data.Subset(test_data, range(32))
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
     test_loaders.append(test_loader)
 
@@ -130,14 +131,14 @@ def train_with_blockchain():
 
         # compute outputs
         outputs = models[num_clients](sum_grad)
-        loss = criterion(outputs, targets)
+        loss = criterion(outputs, torch.nn.functional.one_hot(targets, num_classes=2).float())
 
         # parties and server compute gradient and do SGD step
         for i in range(num_clients + 1):
             optimizers[i].zero_grad()
         loss.backward()
         for i in range(num_clients + 1):
-            optimizer[i].step()
+            optimizers[i].step()
     
         # parties and server calculate new learning rate
         for i in range(num_clients + 1):
@@ -189,14 +190,14 @@ def train_without_blockchain():
 
         # compute outputs
         outputs = models[num_clients](sum_grad)
-        loss = criterion(outputs, targets)
+        loss = criterion(outputs, torch.nn.functional.one_hot(targets, num_classes=2).float())
 
         # parties and server compute gradient and do SGD step
         for i in range(num_clients + 1):
             optimizers[i].zero_grad()
         loss.backward()
         for i in range(num_clients + 1):
-            optimizer[i].step()
+            optimizers[i].step()
 
         # parties and server calculate new learning rate
         for i in range(num_clients + 1):
@@ -261,16 +262,16 @@ def evaluate(mode):
     return (accuracy, loss)
 
 # initial loss
-#test_accuracy, test_loss = evaluate(mode = 'test')
-#print('Initial test loss: {:.2f} \t Initial test accuracy: {:.2f}'.format(test_loss, test_accuracy))
+test_accuracy, test_loss = evaluate(mode = 'test')
+print('Initial test loss: {:.2f} \t Initial test accuracy: {:.2f}'.format(test_loss, test_accuracy))
 
 # main training loop
 for epoch in range(num_epochs):
     print('\n-----------------------------------')
     print('Epoch: [%d/%d]' % (epoch+1, num_epochs))
 
-    train_with_blockchain()
-    #val_accuracy, val_loss = evaluate(mode = 'validation')
-    #test_accuracy, test_loss = evaluate(mode = 'test')
+    train_without_blockchain()
+    val_accuracy, val_loss = evaluate(mode = 'validation')
+    test_accuracy, test_loss = evaluate(mode = 'test')
     
-    #print('Val Loss: {:.2f} \t Val Accuracy: {:.2f} \t Test Loss: {:.2f} \t Test Accuracy: {:.2f}'.format(val_loss, val_accuracy, test_loss, test_accuracy))
+    print('Val Loss: {:.2f} \t Val Accuracy: {:.2f} \t Test Loss: {:.2f} \t Test Accuracy: {:.2f}'.format(val_loss, val_accuracy, test_loss, test_accuracy))
