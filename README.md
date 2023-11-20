@@ -52,3 +52,7 @@ The smart contract will not perform any training, since it will have high gas co
 
 **Rationale:** Allows for multiple hospitals to interface with the model without the need for a centralized authority. Blockchain will provide transparency and verifiability, and local differential privacy mechanisms will ensure privacy. 
 
+# Dataset
+
+We use an image dataset with binary classification that predicts if a medical image has Covid or not. The dataset is vertically splitted among 4 parties so that each party holds a quadrant of each image. The split dataset can be retrieved using the Google Drive [link](https://drive.google.com/file/d/1LUGy0TA03C-wcLBk8YGDeVJ42u2yHmY_/view?usp=sharing).
+
