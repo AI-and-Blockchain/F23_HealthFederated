@@ -5,8 +5,8 @@ Hospitals have huge amounts of data that they might not like to share openly wit
 
 # How to run
 Prerequisites: Jupyter
-1. Blockchain and AI Integration:
-(i) Download src/Aggregator.sol and src/ Blockchain_and_VFL_Integration.ipynb in the same directory.
+1. Blockchain and AI Integration:<br>
+(i) Download src/Aggregator.sol and src/ Blockchain_and_VFL_Integration.ipynb in the same directory.<br>
 (ii) Execute each cell in the notebook sequentially. The aggregated/summed weights computed on a set of dummy weights from four clients will be displayed in the last cell of the notebook.
 
 # Implementation
