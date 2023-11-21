@@ -32,19 +32,19 @@ contract FederatedAggregator {
     uint256 MAX_CLIENTS = 4;
 
     // initialize server in constructor
-    constructor() {
+    constructor(address[] memory clientAddrs) {
         owner = msg.sender;
         server = Server({clientCount: 0, maxIndex: 0});
+
+        for (uint i = 0;i < clientAddrs.length; i++){
+            if (i>= MAX_CLIENTS) {
+                break;
+            }
+            clients.push(Client({clientAddress: msg.sender, maxIndex: 0}));
+        }
+
     }
 
-    // function to create a client object and add it to the list
-    function addParticipant() public {
-        require(msg.sender != address(0), "Invalid client address");
-        require(aggregationRounds == 0, "Communication Rounds have started. Cannot add new clients.");
-        require(clients.length <= MAX_CLIENTS, "Max Client Count reached. Cannot add any more clients.");
- 
-        clients.push(Client({clientAddress: msg.sender, maxIndex: 0}));
-    }
 
 
     function getAggregatedWeights()  view public returns (uint256[][] memory) {
