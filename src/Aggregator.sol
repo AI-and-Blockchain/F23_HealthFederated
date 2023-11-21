@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 contract FederatedAggregator {
+    address owner;
     // struct to represent a client
     // contains an addr and a clients individual model params
     struct Client {
@@ -31,19 +32,21 @@ contract FederatedAggregator {
     uint256 MAX_CLIENTS = 4;
 
     // initialize server in constructor
-    constructor(address[] memory clientAddrs) {
+    constructor() {
+        owner = msg.sender;
         server = Server({clientCount: 0, maxIndex: 0});
-
-        for (uint i = 0;i < clientAddrs.length; i++){
-            if (i>= MAX_CLIENTS) {
-                break;
-            }
-            clients.push(Client({clientAddress: msg.sender, maxIndex: 0}));
-        }
-
     }
 
-    // getter for aggregated weights
+    // function to create a client object and add it to the list
+    function addParticipant() public {
+        require(msg.sender != address(0), "Invalid client address");
+        require(aggregationRounds == 0, "Communication Rounds have started. Cannot add new clients.");
+        require(clients.length <= MAX_CLIENTS, "Max Client Count reached. Cannot add any more clients.");
+ 
+        clients.push(Client({clientAddress: msg.sender, maxIndex: 0}));
+    }
+
+
     function getAggregatedWeights()  view public returns (uint256[][] memory) {
         uint256[][] memory params = new uint256[][](server.maxIndex);
         for(uint i = 0 ;i < server.maxIndex; i++ ) {
@@ -76,6 +79,7 @@ contract FederatedAggregator {
     // function to aggregate the client params into the global params
     function aggregate() public {
         require(clients.length > 0, "No clients available");
+        require(msg.sender == owner, "Only the owner can start aggregation");
         
         // clear old params
         for (uint i = 0;i < server.maxIndex; i++){
