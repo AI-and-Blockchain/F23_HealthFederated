@@ -4,13 +4,15 @@ from web3 import Web3
 from eth_tester import EthereumTester, PyEVMBackend
 from web3.providers.eth_tester import EthereumTesterProvider
 
+SOLC_BINARY_PATH = ".\\solc-0.8.23\\solc.exe"
+CONTRACT_SOURCE = '..\\src\\Aggregator.sol'
 
 # compile contract into bytecode
 def compile_contract():
-    with open('..\\src\\Aggregator.sol', 'r') as file:
+    with open(CONTRACT_SOURCE, 'r') as file:
         contract_source_code = file.read()
 
-    compiled_sol = compile_source(source=contract_source_code, solc_binary=".\\solc-0.8.23\\solc.exe")
+    compiled_sol = compile_source(source=contract_source_code, solc_binary=SOLC_BINARY_PATH)
     contract_id, contract_interface = compiled_sol.popitem()
     bytecode = contract_interface['bin']
     abi = contract_interface['abi']
