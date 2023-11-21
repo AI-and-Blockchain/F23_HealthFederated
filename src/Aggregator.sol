@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 contract FederatedAggregator {
-    address owner;
     // struct to represent a client
     // contains an addr and a clients individual model params
     struct Client {
@@ -33,7 +32,6 @@ contract FederatedAggregator {
 
     // initialize server in constructor
     constructor(address[] memory clientAddrs) {
-        owner = msg.sender;
         server = Server({clientCount: 0, maxIndex: 0});
 
         for (uint i = 0;i < clientAddrs.length; i++){
@@ -45,8 +43,7 @@ contract FederatedAggregator {
 
     }
 
-
-
+    // getter for aggregated weights
     function getAggregatedWeights()  view public returns (uint256[][] memory) {
         uint256[][] memory params = new uint256[][](server.maxIndex);
         for(uint i = 0 ;i < server.maxIndex; i++ ) {
@@ -79,7 +76,6 @@ contract FederatedAggregator {
     // function to aggregate the client params into the global params
     function aggregate() public {
         require(clients.length > 0, "No clients available");
-        require(msg.sender == owner, "Only the owner can start aggregation");
         
         // clear old params
         for (uint i = 0;i < server.maxIndex; i++){
