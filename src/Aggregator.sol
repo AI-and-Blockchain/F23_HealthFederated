@@ -79,7 +79,6 @@ contract FederatedAggregator {
     // function to aggregate the client params into the global params
     function aggregate() public {
         require(clients.length > 0, "No clients available");
-        require(msg.sender == owner, "Only the owner can start aggregation");
         
         // clear old params
         for (uint i = 0;i < server.maxIndex; i++){
