@@ -71,7 +71,7 @@ train_loaders = []
 val_loaders = []
 test_loaders = []
 
-# train (800); val (160); test (480)
+# train (800); val (160); test (192)
 
 for i in range(num_clients):
     train_dataset = torchvision.datasets.ImageFolder(root=f'/gpfs/u/home/VFLA/VFLAnrnl/scratch/SplitCovid19/client{i}/train', transform=transform)
@@ -82,74 +82,9 @@ for i in range(num_clients):
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False,  num_workers=1)
     val_loaders.append(val_loader)
     test_dataset = torchvision.datasets.ImageFolder(root=f'/gpfs/u/home/VFLA/VFLAnrnl/scratch/SplitCovid19/client{i}/test', transform=transform)
-    test_data = torch.utils.data.Subset(test_dataset, range(480))
+    test_data = torch.utils.data.Subset(test_dataset, range(192))
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=1)
     test_loaders.append(test_loader)
-
-# train function
-def train_with_blockchain():
-    
-    targets = None
-    embeddings_grad = [None] * num_clients
-    embeddings_nograd = [None] * num_clients
-    
-    completed = False
-    train_iterators = []
-    for i in range(num_clients):
-        train_iterators.append(iter(train_loaders[i]))
-    
-    while not completed:
-        # At party side
-        for i in range(num_clients):
-            # get current batch
-            item = next(train_iterators[i], -1)
-            
-            if item == -1:
-                completed = True
-                break
-            
-            inputs, targets = item
-
-            # generate embedding
-            embeddings_grad[i] = models[i](inputs)
-            with torch.no_grad():
-                embeddings_nograd[i] = models[i](inputs)
-
-            # add differential privacy noise
-            embeddings_nograd[i] = quantize(embeddings_nograd[i], theta, quant_bin)
-
-            # send embeddings (embeddings_nograd[i]) to smart contract
-            #???
-        
-        if completed:
-            break
-
-        # At server side
-        # retrieve the embedding sum from smart contract
-        with torch.no_grad():
-            sum_nograd = None
-
-        # dequantize the discrete sum into continuous sum
-        sum_nograd = dequantize(sum_nograd, theta, quant_bin, num_clients)
-        sum_grad = torch.sum(torch.stack(embeddings_grad),axis=0)
-        sum_grad.data = sum_nograd
-
-        # compute outputs
-        outputs = models[num_clients](sum_grad)
-        loss = criterion(outputs, torch.nn.functional.one_hot(targets, num_classes=2).float())
-
-        # parties and server compute gradient and do SGD step
-        for i in range(num_clients + 1):
-            optimizers[i].zero_grad()
-        loss.backward()
-        for i in range(num_clients + 1):
-            optimizers[i].step()
-    
-        # parties and server calculate new learning rate
-        for i in range(num_clients + 1):
-            schedulers[i].step()
-
-    del train_iterators
 
 # train without blockchain
 def train_without_blockchain():
@@ -275,21 +210,17 @@ def evaluate(mode):
 
 # initial loss
 print('VFL training with Centralized Model')
-#test_accuracy, test_loss = evaluate(mode = 'test')
-#print('Initial test loss: {:.2f} \t Initial test accuracy: {:.2f}'.format(test_loss, test_accuracy))
+test_accuracy, test_loss = evaluate(mode = 'test')
+print('Initial test loss: {:.2f} \t Initial test accuracy: {:.2f}'.format(test_loss, test_accuracy))
 
 # main training loop
 for epoch in range(num_epochs):
     print('\n-----------------------------------')
     print('Epoch: [%d/%d]' % (epoch+1, num_epochs))
 
-    print('Running training')
     train_without_blockchain()
-    print('Finished training')
-    print('Running validation')
+
     val_accuracy, val_loss = evaluate(mode = 'validation')
-    print('Finished validation')
-    print('Running testing')
     test_accuracy, test_loss = evaluate(mode = 'test')
-    print('Finished testing')
+
     print('Val Loss: {:.2f} \t Val Accuracy: {:.2f} \t Test Loss: {:.2f} \t Test Accuracy: {:.2f}'.format(val_loss, val_accuracy, test_loss, test_accuracy))
