@@ -55,6 +55,10 @@ contract FederatedAggregator {
         return params;
     }
 
+    function getClientCount() view public returns (uint256) {
+        return server.clientCount;
+    }
+
     // function to update params for a client
     // if the message sender is a client, will update params with the provided arg
     function updateParticipantParameters(uint256[][] memory newParameters) public {
