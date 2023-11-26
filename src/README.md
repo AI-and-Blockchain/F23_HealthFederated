@@ -37,8 +37,12 @@ The split dataset can be retrieved using the Google Drive [link](https://drive.g
 
 ### Usage
 
-The following command is used to run VFL code.
+The following command is used to run VFL code without blockchain.
 ```bash
 python vfl_without_blockchain.py <path-to-dataset> --theta <theta>
 ```
 where `<path-to-dataset>` is the path to where the SplitCovid19 dataset is located, and `theta` is the differential privacy noise in range [0, 0.25].
+
+# Running with blockchain
+
+Execute each cell in the demo.ipynb notebook.
