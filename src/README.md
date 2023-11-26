@@ -9,25 +9,6 @@ Running the algorithm requires the following dependencies, which can be installe
 1. pytorch
 2. numpy
 
-All the code in src requires the following dependencies:
-1. web3
-2. eth-account
-3. eth-tester
-4. py-solc-x
-5. py-evm
-6. numpy
-7. torch
-8. torchvision
-9. Pillow
-10. tqdm
-11. scikit-learn
-12. matplotlib
-13. argparse
-
-Run the 'installDepenencies' script to automatically install the necessary dependencies. 
-- For UNIX systems, run the ```bash installDependencies.sh``` script
-- For Windows systems, un the ```bash installDependencies.cmd``` script
-
 ### Dataset
 
 We use an image dataset with binary classification that predicts if a medical image has Covid or not.
