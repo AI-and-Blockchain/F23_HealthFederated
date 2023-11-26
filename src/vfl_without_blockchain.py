@@ -1,6 +1,5 @@
 import numpy as np
-from PIL import Image
-import os
+import argparse
 
 import torch
 import torch.nn as nn
@@ -8,19 +7,23 @@ from torch.utils.data import DataLoader
 import torchvision
 import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import ExponentialLR
-from torch.autograd import Variable
 from torch.distributions.binomial import Binomial
 
-from models import ClientModel, ServerModel
+from models import ClientModel2Layers, ServerModel
 
 # Arguments and parameters
+parser = argparse.ArgumentParser(description='VFL')
+parser.add_argument('data', metavar='DIR', help='path to SplitCovid19 dataset', default='./')
+parser.add_argument('--theta', default=0.15, type=float, metavar='T', help='noise value (in range [0, 0.25])')
+args = parser.parse_args()
+
 num_clients = 4 # fixed size
 lr = 0.0001
 lr_decay = 0.9
-batch_size = 32
+batch_size = 10
 num_epochs = 5
 quant_bin = 8 # quantization parameter
-theta = 0.15 # DP noise parameter
+theta = args.theta # DP noise parameter
 
 # Make models for each client
 models = []
@@ -32,7 +35,7 @@ for i in range(num_clients+1):
     if i == num_clients:
         model = ServerModel()
     else:
-        model = ClientModel()
+        model = ClientModel2Layers()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     scheduler = ExponentialLR(optimizer, gamma=lr_decay)
     
@@ -40,7 +43,7 @@ for i in range(num_clients+1):
     optimizers.append(optimizer)
     schedulers.append(scheduler)
 
-criterion = nn.BCEWithLogitsLoss() # Binary cross-entropy
+criterion = nn.CrossEntropyLoss()
 
 # Discrete differential privacy noise
 def quantize(x, theta, m):
@@ -71,18 +74,22 @@ train_loaders = []
 val_loaders = []
 test_loaders = []
 
-# train (800); val (160); test (192)
+# train (800); val (150); test (200)
+train_val_permute = np.random.permutation(np.arange(989))
+train_permute = train_val_permute[:800]
+val_permute = train_val_permute[800:950]
+test_permute = np.random.permutation(np.arange(563))[:200]
 
 for i in range(num_clients):
-    train_dataset = torchvision.datasets.ImageFolder(root=f'/gpfs/u/home/VFLA/VFLAnrnl/scratch/SplitCovid19/client{i}/train', transform=transform)
-    train_data = torch.utils.data.Subset(train_dataset, range(800))
-    val_data = torch.utils.data.Subset(train_dataset, range(800, 960))
+    train_dataset = torchvision.datasets.ImageFolder(root=f'{args.data}/SplitCovid19/client{i}/train', transform=transform)
+    train_data = torch.utils.data.Subset(train_dataset, indices=train_permute)
+    val_data = torch.utils.data.Subset(train_dataset, indices=val_permute)
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False,  num_workers=1)
     train_loaders.append(train_loader)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False,  num_workers=1)
     val_loaders.append(val_loader)
-    test_dataset = torchvision.datasets.ImageFolder(root=f'/gpfs/u/home/VFLA/VFLAnrnl/scratch/SplitCovid19/client{i}/test', transform=transform)
-    test_data = torch.utils.data.Subset(test_dataset, range(192))
+    test_dataset = torchvision.datasets.ImageFolder(root=f'{args.data}/SplitCovid19/client{i}/test', transform=transform)
+    test_data = torch.utils.data.Subset(test_dataset, indices=test_permute)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=1)
     test_loaders.append(test_loader)
 
@@ -132,7 +139,7 @@ def train_without_blockchain():
 
         # compute outputs
         outputs = models[num_clients](sum_grad)
-        loss = criterion(outputs, torch.nn.functional.one_hot(targets, num_classes=2).float())
+        loss = criterion(outputs, targets)
 
         # parties and server compute gradient and do SGD step
         for i in range(num_clients + 1):
@@ -150,14 +157,11 @@ def train_without_blockchain():
 def evaluate(mode):
     # validation or testing
     data_iterators = []
-    print('Loading data iterators for', mode)
     for i in range(num_clients):
-        print('Client', i)
         if mode == 'validation':
             data_iterators.append(iter(val_loaders[i]))
         else:
             data_iterators.append(iter(test_loaders[i]))
-    print('Loaded data iterators')
     
     # initialize variables
     embeddings = [None] * num_clients
@@ -191,7 +195,7 @@ def evaluate(mode):
 
         # compute outputs
         outputs = models[num_clients](embedding_sum)
-        loss = criterion(outputs, torch.nn.functional.one_hot(targets, num_classes=2).float())
+        loss = criterion(outputs, targets)
         _, predicted = torch.max(outputs.data, 1)
 
         # compute accuracy

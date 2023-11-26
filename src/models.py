@@ -2,9 +2,38 @@ import torch
 import torch.nn as nn
 import torchvision
 
-class ClientModel(nn.Module):
+class ClientModel2Layers(nn.Module):
     def __init__(self):
-        super(ClientModel, self).__init__()
+        super(ClientModel2Layers, self).__init__()
+        self.resnet = torchvision.models.resnet50(pretrained=True)
+        self.vgg = torchvision.models.vgg19(pretrained=True)
+
+        # Remove the classification layers (fully connected layers)
+        self.resnet = nn.Sequential(*list(self.resnet.children())[:-1])
+        self.vgg = nn.Sequential(*list(self.vgg.children())[:-1])
+
+        self.classifier = nn.Sequential(
+            nn.Linear(27136, 64),
+            nn.Tanh(),
+        )
+
+    def forward(self, x):
+        x1 = self.resnet(x)
+        x2 = self.vgg(x)
+
+        # Flatten and concatenate
+        x1 = x1.view(x1.size(0), -1)
+        x2 = x2.view(x2.size(0), -1)
+        x = torch.cat((x1, x2), dim=1)
+
+        # Final embedding has size 64 and in range [-1, 1]
+        x = self.classifier(x)
+
+        return x
+    
+class ClientModel3Layers(nn.Module):
+    def __init__(self):
+        super(ClientModel3Layers, self).__init__()
         self.densenet = torchvision.models.densenet169(pretrained=True)
         self.resnet = torchvision.models.resnet50(pretrained=True)
         self.vgg = torchvision.models.vgg19(pretrained=True)
