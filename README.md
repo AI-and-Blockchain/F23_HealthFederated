@@ -4,10 +4,7 @@
 Hospitals have huge amounts of data that they might not like to share openly with other hospitals. However, hospitals benefit from having a Machine Learning model that has been trained on data from other hospitals for better insights on their own data. Vertical Federated Learning is a good fit for this use case. Blockchain is used for transparency and immutability of the global weight updates. Local Differential Privacy provides protection for model weight updates that are published on the Blockchain.
 
 # How to run
-Prerequisites: Jupyter
-1. Blockchain and AI Integration:<br>
-(i) Download src/Aggregator.sol and src/ Blockchain_and_VFL_Integration.ipynb in the same directory.<br>
-(ii) Execute each cell in the notebook sequentially. The aggregated/summed weights computed on a set of dummy weights from four clients will be displayed in the last cell of the notebook.
+[src/README.md](src/README.md)
 
 # Implementation
 Our project uses Vertical Federated Learning for binary classification of medical image data from different hospitals. A Smart Contract is used for aggregation (summation) of local weight updates to create the global weight update. The global weight update is stored on the Blockchain and sent to a central server. The central server trains its model on the global weight update sent by the Smart Contract and sends its global weight update back to each client.
