@@ -21,7 +21,7 @@ class BlockchainVFLIntegrator:
         self.w3 = Web3(EthereumTesterProvider(PyEVMBackend()))
         self.fund_client_accounts()
 
-        compiled_sol = self.compile_source_file(source=contract_path, binary_path="../tests/solc-0.8.23/solc.exe")
+        compiled_sol = self.compile_source_file(contract_path)
         self.contract_id, self.contract_interface = compiled_sol.popitem()
         self.contract_address = self.deploy_contract(self.contract_interface)
 
@@ -68,7 +68,7 @@ class BlockchainVFLIntegrator:
         with open(file_path, 'r') as f:
             source = f.read()
 
-        return compile_source(source, output_values=['abi','bin'])
+        return compile_source(source=source, output_values=['abi','bin'], binary_path="../tests/solc-0.8.23/solc.exe")
 
     def deploy_contract(self, contract_interface):
         client_addresses = [client_account.address for client_account in self.client_accounts]
