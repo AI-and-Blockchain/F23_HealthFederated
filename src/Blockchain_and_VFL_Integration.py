@@ -3,7 +3,7 @@ import secrets
 from web3 import Web3
 from web3.providers.eth_tester import EthereumTesterProvider
 from eth_tester import PyEVMBackend
-from solcx import compile_source, install_solc, get_solcx_install_folder
+from solcx import compile_source
 import sys
 import os
 
@@ -68,9 +68,9 @@ class BlockchainVFLIntegrator:
             source = f.read()
 
         if sys.platform == 'win32':
-            SOLC_BINARY_PATH = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "tests"+ os.sep + "solc-0.8.23-win32" + os.sep + "solc.exe"
+            SOLC_BINARY_PATH = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "tests" + os.sep + "solc-0.8.23-win32" + os.sep + "solc.exe"
         else:
-            SOLC_BINARY_PATH = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "tests"+ os.sep + "solc-0.8.23-macos" + os.sep + "solc-macos"
+            SOLC_BINARY_PATH = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "tests" + os.sep + "solc-0.8.23-macos" + os.sep + "solc-macos"
 
         return compile_source(source, output_values=['abi','bin'], solc_binary=SOLC_BINARY_PATH)
 
@@ -113,7 +113,9 @@ class BlockchainVFLIntegrator:
 
 
 if __name__=='__main__':
-    blockchain_vfl_integrator = BlockchainVFLIntegrator(4, "./Aggregator.sol")
+    CONTRACT_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "Aggregator.sol"
+
+    blockchain_vfl_integrator = BlockchainVFLIntegrator(4, CONTRACT_SOURCE)
 
     client_parameters = []
 
