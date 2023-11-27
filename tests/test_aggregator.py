@@ -4,8 +4,13 @@ from web3 import Web3
 from eth_tester import EthereumTester, PyEVMBackend
 from web3.providers.eth_tester import EthereumTesterProvider
 import os
+import sys
 
-SOLC_BINARY_PATH = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "tests"+ os.sep + "solc-0.8.23" + os.sep +"solc.exe"
+if sys.platform == 'win32':
+    SOLC_BINARY_PATH = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "tests"+ os.sep + "solc-0.8.23-win32" + os.sep + "solc.exe"
+else:
+    SOLC_BINARY_PATH = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "tests"+ os.sep + "solc-0.8.23-macos" + os.sep + "solc.bin"
+
 CONTRACT_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "Aggregator.sol"
 
 # compile contract into bytecode
