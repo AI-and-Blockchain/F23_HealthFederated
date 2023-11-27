@@ -218,3 +218,15 @@ if __name__ == "__main__":
 
     # Demo: main code demonstrating how a training round work with smart contract integration
     train_with_blockchain()
+
+    # main training loop
+    for epoch in range(num_epochs):
+        print('\n-----------------------------------')
+        print('Epoch: [%d/%d]' % (epoch+1, num_epochs))
+
+        train_with_blockchain()
+
+        val_accuracy, val_loss = evaluate(mode = 'validation')
+        test_accuracy, test_loss = evaluate(mode = 'test')
+
+        print('Val Loss: {:.2f} \t Val Accuracy: {:.2f} \t Test Loss: {:.2f} \t Test Accuracy: {:.2f}'.format(val_loss, val_accuracy, test_loss, test_accuracy))
