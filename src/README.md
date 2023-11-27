@@ -26,8 +26,8 @@ All the code in src requires the following dependencies:
 
 Run the 'installDependencies' script to automatically installl all the necessary dependencies.
 
-- For UNIX systems, run ```bash installDependencies.cmd```
-- For Windows systems, run ```bash installDependencies.sh```
+- For UNIX systems, run ```installDependencies.cmd```
+- For Windows systems, run ```installDependencies.sh```
 
 ### Dataset
 
