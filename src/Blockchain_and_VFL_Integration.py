@@ -1,15 +1,17 @@
-#!/usr/bin/env python
-
 from eth_account import Account
 import secrets
 from web3 import Web3
 from web3.providers.eth_tester import EthereumTesterProvider
 from eth_tester import PyEVMBackend
-from solcx import compile_source
+from solcx import compile_source, install_solc, get_solcx_install_folder
+import sys
+import shutil
 
 class BlockchainVFLIntegrator:
     def __init__(self, num_clients, contract_path):
-        # install_solc(solcx_binary_path="../tests/solc-0.8.23")
+        if sys.platform!="win32":
+            shutil.rmtree(get_solcx_install_folder())
+            install_solc()
         self.client_accounts = []
         
         # Generate test Ethereum accounts for each client/hospital with a private key.
@@ -68,7 +70,10 @@ class BlockchainVFLIntegrator:
         with open(file_path, 'r') as f:
             source = f.read()
 
-        return compile_source(source=source, output_values=['abi','bin'], binary_path="../tests/solc-0.8.23/solc.exe")
+        if sys.platform=="win32":
+            return compile_source(source, output_values=['abi','bin'], binary_path="../tests/solc-0.8.23/solc.exe")
+        else:
+            return compile_source(source, output_values=['abi','bin'])
 
     def deploy_contract(self, contract_interface):
         client_addresses = [client_account.address for client_account in self.client_accounts]
