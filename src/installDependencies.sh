@@ -21,5 +21,3 @@ pip install argparse
 echo
 echo "DONE"
 echo
-
-read -p "Press any key to continue..."

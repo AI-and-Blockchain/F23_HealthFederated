@@ -19,4 +19,3 @@ pip install argparse
 ECHO.
 ECHO DONE
 ECHO.
-PAUSE
