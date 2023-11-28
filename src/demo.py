@@ -190,18 +190,19 @@ def evaluate(mode):
 
 
 if __name__ == "__main__":
+    # Arguments and parameters
+    parser = argparse.ArgumentParser(description='VFL')
+    parser.add_argument('--datapath', metavar='DIR', help='path to SplitCovid19 dataset', default='./')
+    parser.add_argument('--datasize', default=1.0, type=float, metavar='T', help='Datasize size (0.25, 0.5, or 1.0). Default is 1.0')
+    parser.add_argument('--theta', default=0.1, type=float, metavar='T', help='Noise value (in range [0, 0.25]). Default is 0.1')
+    parser.add_argument('--withblockchain', type=bool, help='With or without blockchain. Default is False', default=False)
+    args = parser.parse_args()
+
     blockchain_vfl_integrator = None
     if args.withblockchain:
         CONTRACT_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "Aggregator.sol"
         # Create the blockchain integrator
         blockchain_vfl_integrator = BlockchainVFLIntegrator(4, CONTRACT_SOURCE)
-    
-    # Arguments and parameters
-    parser = argparse.ArgumentParser(description='VFL')
-    parser.add_argument('--theta', default=0.1, type=float, metavar='T', help='Noise value (in range [0, 0.25]). Default is 0.1')
-    parser.add_argument('--datasize', default=1.0, type=float, metavar='T', help='Datasize size (0.25, 0.5, or 1.0). Default is 1.0')
-    parser.add_argument('--withblockchain', type=bool, help='With or without blockchain. Default is False', default=False)
-    args = parser.parse_args()
     
     num_clients = 4
     lr = 0.0001
@@ -266,14 +267,14 @@ if __name__ == "__main__":
         test_permute = np.random.permutation(np.arange(563))[:50]
 
     for i in range(num_clients):
-        train_dataset = torchvision.datasets.ImageFolder(root=f'SplitCovid19/client{i}/train', transform=transform)
+        train_dataset = torchvision.datasets.ImageFolder(root=f'{args.datapath}/SplitCovid19/client{i}/train', transform=transform)
         train_data = torch.utils.data.Subset(train_dataset, indices=train_permute)
         val_data = torch.utils.data.Subset(train_dataset, indices=val_permute)
         train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False,  num_workers=1)
         train_loaders.append(train_loader)
         val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False,  num_workers=1)
         val_loaders.append(val_loader)
-        test_dataset = torchvision.datasets.ImageFolder(root=f'SplitCovid19/client{i}/test', transform=transform)
+        test_dataset = torchvision.datasets.ImageFolder(root=f'{args.datapath}/SplitCovid19/client{i}/test', transform=transform)
         test_data = torch.utils.data.Subset(test_dataset, indices=test_permute)
         test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=1)
         test_loaders.append(test_loader)    
