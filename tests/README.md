@@ -4,7 +4,11 @@ The file `test_aggregator.py` contains unit tests to test the functionality of t
 
 ## 1. Install Python/Pip
 
-Make sure that [pip](https://pypi.org/project/pip/) and [python3](https://www.python.org/downloads/) are installed 
+Make sure that [pip](https://pypi.org/project/pip/) and [python3](https://www.python.org/downloads/) are installed
+
+To check if python is installed, type ```python --version``` in the terminal. If that does not work, you may need to try ```python3 --version```. If neither work, then you need to install python. 
+
+To check if pip is installed, type ```pip --version``` in the terminal. If that does not work, you may need to try ```pip3 --version```. If neither work, then you need to install pip. 
 
 ## 2. Install the other Dependancies
 
