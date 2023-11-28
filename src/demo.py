@@ -32,11 +32,12 @@ def dequantize(q, theta, m, n):
     return sum 
 
 # train function
-def train_with_blockchain():
+def train():
     
-    targets = None
     embeddings_grad = [None] * num_clients
     embeddings_nograd = [None] * num_clients
+    sum_nograd = None
+    targets = None
     
     completed = False
     train_iterators = []
@@ -63,18 +64,23 @@ def train_with_blockchain():
             # add differential privacy noise
             embeddings_nograd[i] = quantize(embeddings_nograd[i], theta, quant_bin)
 
-            # send embeddings (embeddings_nograd[i]) to smart contract
-            client_parameters = [list(map(int, row)) for row in embeddings_nograd[i].tolist()]
-            blockchain_vfl_integrator.update_client_weights(blockchain_vfl_integrator.client_accounts[i], client_parameters)
+            if args.withblockchain:
+                # send embeddings (embeddings_nograd[i]) to smart contract
+                client_parameters = [list(map(int, row)) for row in embeddings_nograd[i].tolist()]
+                blockchain_vfl_integrator.update_client_weights(blockchain_vfl_integrator.client_accounts[i], client_parameters)
         
         if completed:
             break
 
         # At server side
-        # retrieve the embedding sum from smart contract
-        blockchain_vfl_integrator.aggregate_weights()
-        with torch.no_grad():
-            sum_nograd = torch.tensor(blockchain_vfl_integrator.get_aggregated_weights())
+        if args.withblockchain:
+            # retrieve the embedding sum from smart contract
+            blockchain_vfl_integrator.aggregate_weights()
+            with torch.no_grad():
+                sum_nograd = torch.tensor(blockchain_vfl_integrator.get_aggregated_weights())
+        else:
+            with torch.no_grad():
+                sum_nograd = torch.sum(torch.stack(embeddings_nograd),axis=0)
 
         # dequantize the discrete sum into continuous sum
         sum_nograd = dequantize(sum_nograd, theta, quant_bin, num_clients)
@@ -111,6 +117,8 @@ def evaluate(mode):
     
     # initialize variables
     embeddings = [None] * num_clients
+    embeddings_nograd = [None] * num_clients
+    sum_nograd = None
     targets = None
     completed = False
     total = 0
@@ -132,15 +140,37 @@ def evaluate(mode):
 
             # generate embedding
             embeddings[i] = models[i](inputs)
+            with torch.no_grad():
+                embeddings_nograd[i] = models[i](inputs)
+
+            # add differential privacy noise
+            embeddings_nograd[i] = quantize(embeddings_nograd[i], theta, quant_bin)
+
+            if args.withblockchain:
+                # send embeddings (embeddings_nograd[i]) to smart contract
+                client_parameters = [list(map(int, row)) for row in embeddings_nograd[i].tolist()]
+                blockchain_vfl_integrator.update_client_weights(blockchain_vfl_integrator.client_accounts[i], client_parameters)
         
         if completed:
             break
 
         # At server side
-        embedding_sum = torch.sum(torch.stack(embeddings),axis=0)
+        if args.withblockchain:
+            # retrieve the embedding sum from smart contract
+            blockchain_vfl_integrator.aggregate_weights()
+            with torch.no_grad():
+                sum_nograd = torch.tensor(blockchain_vfl_integrator.get_aggregated_weights())
+        else:
+            with torch.no_grad():
+                sum_nograd = torch.sum(torch.stack(embeddings_nograd),axis=0)
+
+        # dequantize the discrete sum into continuous sum
+        sum_nograd = dequantize(sum_nograd, theta, quant_bin, num_clients)
+        sum_grad = torch.sum(torch.stack(embeddings_grad),axis=0)
+        sum_grad.data = sum_nograd
 
         # compute outputs
-        outputs = models[num_clients](embedding_sum)
+        outputs = models[num_clients](sum_grad)
         loss = criterion(outputs, targets)
         _, predicted = torch.max(outputs.data, 1)
 
@@ -168,6 +198,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='VFL')
     parser.add_argument('--theta', default=0.1, type=float, metavar='T', help='Noise value (in range [0, 0.25]). Default is 0.1')
     parser.add_argument('--datasize', default=1.0, type=float, metavar='T', help='Datasize size (0.25, 0.5, or 1.0). Default is 1.0')
+    parser.add_argument('--withblockchain', type=bool, help='With or without blockchain. Default is False', default=False)
     args = parser.parse_args()
     
     num_clients = 4
@@ -255,7 +286,7 @@ if __name__ == "__main__":
         print('Epoch: [%d/%d]' % (epoch+1, num_epochs))
 
         start = time.time()
-        train_with_blockchain()
+        train()
         print('Time taken: %.2f sec.' % (time.time() - start))
 
         val_accuracy, val_loss = evaluate(mode = 'validation')
