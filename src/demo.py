@@ -116,7 +116,7 @@ def evaluate(mode):
             data_iterators.append(iter(test_loaders[i]))
     
     # initialize variables
-    embeddings = [None] * num_clients
+    embeddings_grad = [None] * num_clients
     embeddings_nograd = [None] * num_clients
     sum_nograd = None
     targets = None
@@ -139,7 +139,7 @@ def evaluate(mode):
             inputs, targets = item
 
             # generate embedding
-            embeddings[i] = models[i](inputs)
+            embeddings_grad[i] = models[i](inputs)
             with torch.no_grad():
                 embeddings_nograd[i] = models[i](inputs)
 
