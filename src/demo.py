@@ -216,8 +216,9 @@ if __name__ == "__main__":
         test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=1)
         test_loaders.append(test_loader)    
 
-    # Demo: main code demonstrating how a training round work with smart contract integration
-    train_with_blockchain()
+    # initial loss
+    test_accuracy, test_loss = evaluate(mode = 'test')
+    print('Initial test loss: {:.2f} \t Initial test accuracy: {:.2f}'.format(test_loss, test_accuracy))
 
     # main training loop
     for epoch in range(num_epochs):
