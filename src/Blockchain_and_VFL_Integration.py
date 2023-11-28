@@ -69,8 +69,12 @@ class BlockchainVFLIntegrator:
 
         if sys.platform == 'win32':
             SOLC_BINARY_PATH = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "tests" + os.sep + "solc-0.8.23-win32" + os.sep + "solc.exe"
-        else:
+        elif sys.platform == 'darwin':
             SOLC_BINARY_PATH = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "tests" + os.sep + "solc-0.8.23-macos" + os.sep + "solc-macos"
+        elif sys.platform == 'linux':
+            SOLC_BINARY_PATH = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "tests" + os.sep + "solc-0.8.23-linux" + os.sep + "solc-static-linux"
+        else:
+            raise Exception("Unsupported OS")
 
         return compile_source(source, output_values=['abi','bin'], solc_binary=SOLC_BINARY_PATH)
 
