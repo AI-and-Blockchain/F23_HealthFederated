@@ -11,6 +11,8 @@ from models import ClientModel2Layers, ServerModel
 from Blockchain_and_VFL_Integration import BlockchainVFLIntegrator
 
 import os
+import argparse
+import time
 
 # Discrete differential privacy noise
 def quantize(x, theta, m):
@@ -161,14 +163,22 @@ if __name__ == "__main__":
     CONTRACT_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "Aggregator.sol"
     # Create the blockchain integrator
     blockchain_vfl_integrator = BlockchainVFLIntegrator(4, CONTRACT_SOURCE)
+    
     # Arguments and parameters
+    parser = argparse.ArgumentParser(description='VFL')
+    parser.add_argument('--theta', default=0.1, type=float, metavar='T', help='Noise value (in range [0, 0.25]). Default is 0.1')
+    parser.add_argument('--datasize', default=1.0, type=float, metavar='T', help='Datasize size (0.25, 0.5, or 1.0). Default is 1.0')
+    args = parser.parse_args()
+    
     num_clients = 4
     lr = 0.0001
     lr_decay = 0.9
     batch_size = 10
     num_epochs = 5
     quant_bin = 8 # quantization parameter
-    theta = 0.15 # DP noise parameter in range [0, 0.25]
+    theta = args.theta # DP noise parameter
+
+    
     # Make models for each client
     models = []
     optimizers = []
@@ -198,10 +208,29 @@ if __name__ == "__main__":
     val_loaders = []
     test_loaders = []
 
-    train_val_permute = np.random.permutation(np.arange(989))
-    train_permute = train_val_permute[:10]
-    val_permute = train_val_permute[10:20]
-    test_permute = np.random.permutation(np.arange(563))[:10]
+    train_val_permute = None
+    train_permute = None
+    val_permute = None
+    test_permute = None
+    
+    if args.datasize == 1.0:
+        # train (800); val (150); test (200)
+        train_val_permute = np.random.permutation(np.arange(989))
+        train_permute = train_val_permute[:800]
+        val_permute = train_val_permute[800:950]
+        test_permute = np.random.permutation(np.arange(563))[:200]
+    elif args.datasize == 0.5:
+        # train (400); val (100); test (100)
+        train_val_permute = np.random.permutation(np.arange(989))
+        train_permute = train_val_permute[:400]
+        val_permute = train_val_permute[400:500]
+        test_permute = np.random.permutation(np.arange(563))[:100]
+    elif args.datasize == 0.25:
+        # train (200); val (50); test (50)
+        train_val_permute = np.random.permutation(np.arange(989))
+        train_permute = train_val_permute[:200]
+        val_permute = train_val_permute[200:250]
+        test_permute = np.random.permutation(np.arange(563))[:50]
 
     for i in range(num_clients):
         train_dataset = torchvision.datasets.ImageFolder(root=f'SplitCovid19/client{i}/train', transform=transform)
@@ -225,7 +254,9 @@ if __name__ == "__main__":
         print('\n-----------------------------------')
         print('Epoch: [%d/%d]' % (epoch+1, num_epochs))
 
+        start = time.time()
         train_with_blockchain()
+        print('Time taken: %.2f sec.' % (time.time() - start))
 
         val_accuracy, val_loss = evaluate(mode = 'validation')
         test_accuracy, test_loss = evaluate(mode = 'test')
