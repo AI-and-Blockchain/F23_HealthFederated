@@ -24,10 +24,10 @@ contract FederatedAggregator {
     // server params as a state variable (mapping can only exist in storage)
     mapping(uint256 => uint256[]) aggregatedParameters;
 
-    Client[] clients;
+    Client[] public clients;
     Server public server;
 
-    uint256 aggregationRounds = 0;
+    uint256 public aggregationRounds = 0;
 
     uint256 MAX_CLIENTS = 4;
 
@@ -42,8 +42,15 @@ contract FederatedAggregator {
         require(msg.sender != address(0), "Invalid client address");
         require(aggregationRounds == 0, "Communication Rounds have started. Cannot add new clients.");
         require(clients.length <= MAX_CLIENTS, "Max Client Count reached. Cannot add any more clients.");
- 
+        // check for duplicate addresses
+        for (uint i = 0;i < clients.length; i++){
+            if (clients[i].clientAddress == msg.sender){
+                revert("This client already exists");
+            }
+        }
+
         clients.push(Client({clientAddress: msg.sender, maxIndex: 0}));
+        server.clientCount++;
     }
 
 
@@ -57,6 +64,23 @@ contract FederatedAggregator {
 
     function getClientCount() view public returns (uint256) {
         return server.clientCount;
+    }
+
+    function getClientParameters(address clientAddr) public returns (uint256[][] memory) {
+        // look for client
+        uint256 max_index = 0;
+        for (uint i = 0;i < clients.length; i++){
+            if (clients[i].clientAddress == clientAddr){
+                max_index = clients[i].maxIndex;
+                // return client params
+                uint256[][] memory params = new uint256[][](max_index);
+                for (uint i = 0; i < max_index; i++){
+                    params[i] = clientParameters[clientAddr][i];
+                }
+                return params;
+            }
+        }
+        revert("Client does not exist");
     }
 
     // function to update params for a client
@@ -117,7 +141,7 @@ contract FederatedAggregator {
             }
 
         }
-
+        aggregationRounds++;
     }
 
 }
