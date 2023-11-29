@@ -233,7 +233,7 @@ def main():
     test_aggregate_different_shapes(contract, web3)
 
     # test aggregation rounds state variable behavior
-    test_aggregationRounds(contract, web3)
+    test_aggregationRounds(contract)
 
     # end
     print("All tests passed")
