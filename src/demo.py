@@ -290,9 +290,9 @@ if __name__ == "__main__":
 
         start = time.time()
         train()
-        print('Time taken: %.2f sec.' % (time.time() - start))
 
         val_accuracy, val_loss = evaluate(mode = 'validation')
         test_accuracy, test_loss = evaluate(mode = 'test')
 
+        print('Time taken: %.2f sec.' % (time.time() - start))
         print('Val Loss: {:.2f} \t Val Accuracy: {:.2f} \t Test Loss: {:.2f} \t Test Accuracy: {:.2f}'.format(val_loss, val_accuracy, test_loss, test_accuracy))
