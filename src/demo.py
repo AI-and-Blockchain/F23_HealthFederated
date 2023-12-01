@@ -193,7 +193,7 @@ if __name__ == "__main__":
     # Arguments and parameters
     parser = argparse.ArgumentParser(description='VFL')
     parser.add_argument('--datapath', metavar='DIR', help='path to SplitCovid19 dataset', default='./')
-    parser.add_argument('--datasize', default=1.0, type=float, metavar='T', help='Datasize size (0.25, 0.5, or 1.0). Default is 1.0')
+    parser.add_argument('--datasize', default=1.0, type=float, metavar='T', help='Datasize size (0.0125, 0.25, 0.5, or 1.0). Default is 1.0')
     parser.add_argument('--theta', default=0.1, type=float, metavar='T', help='Noise value (in range [0, 0.25]). Default is 0.1')
     parser.add_argument('--withblockchain', type=bool, help='With or without blockchain. Default is False', default=False)
     args = parser.parse_args()
@@ -265,9 +265,15 @@ if __name__ == "__main__":
         train_permute = train_val_permute[:200]
         val_permute = train_val_permute[200:250]
         test_permute = np.random.permutation(np.arange(563))[:50]
+    elif  args.datasize == 0.0125:
+        # train (10); val (10); test (10)
+        train_val_permute = np.random.permutation(np.arange(989))
+        train_permute = train_val_permute[:10]
+        val_permute = train_val_permute[10:20]
+        test_permute = np.random.permutation(np.arange(563))[:10]
     else:
         # invalid datasize arg
-        raise Exception("Invalid datasize argument. Must be 0.25, 0.5 or 1.0")
+        raise Exception("Invalid datasize argument. Must be 0.0125, 0.25, 0.5 or 1.0")
 
     for i in range(num_clients):
         train_dataset = torchvision.datasets.ImageFolder(root=f'{args.datapath}/SplitCovid19/client{i}/train', transform=transform)
