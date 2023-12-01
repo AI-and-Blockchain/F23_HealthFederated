@@ -37,9 +37,9 @@ The split dataset can be retrieved using the Google Drive [link](https://drive.g
 
 ### Usage
 
-The following command is used to run VFL code without blockchain.
+The following command is used to run VFL code with/without blockchain.
 ```bash
-python vfl_without_blockchain.py --datapath <path-to-dataset> --datasize <dataset-size> --theta <theta> --withblockchain <use-blockchain>
+python demo.py --datapath <path-to-dataset> --datasize <dataset-size> --theta <theta> --withblockchain <use-blockchain>
 ```
 
 Arguments:
@@ -53,6 +53,4 @@ Arguments:
 5. withblockchain - whether to use blockchain or not
   - Default = False
 
-# Running with blockchain
 
-Execute each cell in the demo.ipynb notebook.
