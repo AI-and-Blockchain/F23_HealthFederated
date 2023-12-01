@@ -180,7 +180,7 @@ def evaluate(mode):
         total += targets.size(0)
 
         # compute loss
-        total_loss += loss
+        total_loss += loss.item()
         n += 1
     
     del data_iterators
@@ -268,7 +268,7 @@ if __name__ == "__main__":
         train_permute = train_val_permute[:200]
         val_permute = train_val_permute[200:250]
         test_permute = np.random.permutation(np.arange(563))[:50]
-    elif  args.datasize == 0.0125:
+    elif args.datasize == 0.0125:
         # train (10); val (10); test (10)
         train_val_permute = np.random.permutation(np.arange(989))
         train_permute = train_val_permute[:10]
