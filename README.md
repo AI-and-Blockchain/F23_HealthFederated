@@ -57,5 +57,14 @@ The smart contract will not perform any training, since it will have high gas co
 
 # Dataset
 
-We use an image dataset with binary classification that predicts if a medical image has Covid or not. The dataset is vertically splitted among 4 parties so that each party holds a quadrant of each image. The split dataset can be retrieved using the Google Drive [link](https://drive.google.com/file/d/1LUGy0TA03C-wcLBk8YGDeVJ42u2yHmY_/view?usp=sharing).
+We use an image dataset with binary classification that predicts if a medical image has Covid-19 or not. The dataset is vertically splitted among 4 parties so that each party holds a quadrant of each image. The split dataset can be retrieved using the Google Drive [link](https://drive.google.com/file/d/1LUGy0TA03C-wcLBk8YGDeVJ42u2yHmY_/view?usp=sharing).
 
+# Experiment Results
+
+We conducted the experiment on the AiMOS cluster and recorded the results as follow. The line graphs show the test accuracy by epoch with and without blockchain for experiment on the full Covid-19 dataset. The bar graph show the runtime took to train the model with three different dataset sizes.
+
+![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/accuracy_with_bc.png)
+
+![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/accuracy_without_bc.png)
+
+![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/runtime.png)
