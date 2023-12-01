@@ -2,6 +2,8 @@
 
 The file `vfl_without_blockchain.py` tests the functionality of the VFL algorithm without interaction with blockchain.
 
+The file `demo.py` provides a demonstration of the entire project. The execution can be configured based on the arguments listed. It can be run with or without the blockchain component. 
+
 ### Dependencies
 
 Running the algorithm requires the following dependencies, which can be installed via `pip`:
@@ -26,8 +28,8 @@ All the code in src requires the following dependencies:
 
 Run the 'installDependencies' script to automatically installl all the necessary dependencies.
 
-- For UNIX systems, run ```installDependencies.cmd```
-- For Windows systems, run ```installDependencies.sh```
+- For UNIX systems, run ```installDependencies.sh```
+- For Windows systems, run ```installDependencies.cmd```
 
 ### Dataset
 
@@ -42,7 +44,7 @@ The following command is used to run VFL code with/without blockchain.
 python demo.py --datapath <path-to-dataset> --datasize <dataset-size> --theta <theta> --withblockchain <use-blockchain>
 ```
 
-Arguments:
+#### Arguments:
 
 1. datapath - path to the dataset
       - Default = "./"
