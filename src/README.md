@@ -47,10 +47,10 @@ Arguments:
 1. datapath - path to the dataset
    - Default = "./"
 2. datasize - portion of dataset to use. Must be 0.25, 0.5, 1.0
-  - Default = 1.0
+   - Default = 1.0
 4. theta - Noise value (in range [0, 0.25])
-  - Default = 0.1
+   - Default = 0.1
 5. withblockchain - whether to use blockchain or not
-  - Default = False
+   - Default = False
 
 
