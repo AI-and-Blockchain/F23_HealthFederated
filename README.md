@@ -7,7 +7,7 @@ Hospitals have huge amounts of data that they might not like to share openly wit
 [src/README.md](src/README.md)
 
 # Implementation
-Our project uses Vertical Federated Learning for binary classification of medical image data from different hospitals. A Smart Contract is used for aggregation (summation) of local weight updates to create the global weight update. The global weight update is stored on the Blockchain and sent to a central server. The central server trains its model on the global weight update sent by the Smart Contract and sends its global weight update back to each client.
+Our project uses Vertical Federated Learning for binary classification of medical image data from different hospitals. A Smart Contract is used for aggregation (summation) of local training results (embedding) to train the global model. The embedding sum is stored on the Blockchain and sent to a central server. The central server trains its model on the embedding sum sent by the Smart Contract and sends the gradient back to each client.
 
 # Model Architecture 
 ![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/Proj-Checkin-02-files/Model%20Architecture1.png)
@@ -18,23 +18,23 @@ Our project uses Vertical Federated Learning for binary classification of medica
 # Centralized Feature Fusion Diagram
 ![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/Proj-Checkin-02-files/Centralized%20Model.png)
 
-1. At first, three CNN pre-trained models, i.e., DenseNet169, ResNet50, and VGG19, with the pre-trained weights will be adopted.
+1. At first, two CNN pre-trained models, i.e., ResNet50, and VGG19, with the pre-trained weights will be adopted for the client model.
 2. We will use this model without their classification layers because we want to use these for feature extraction part only.
-3. All the extracted features will be combined into a single fusion vector using a concatenate layer.
-4. The combined features represent high-level functionality such as sharpening, textures, roundness, and compactness of the CXR images.
-5. Finally, the combined features then feed into the central server for the training and classification purpose.
+3. All the extracted features will be combined into a single fusion vector (embedding) using a concatenate layer.
+4. The embeddings represent high-level functionality such as sharpening, textures, roundness, and compactness of the CXR images.
+5. Finally, the embeddings are summed and then fed into the central server for the training and classification purpose.
 
 # Vertical Federated Learning Algorithm
 
-We will use synthesized vertically distributed dataset for testing purpose. Below is a description of our Vertical Federated Learning algorithm.
+Below is a description of our Vertical Federated Learning algorithm.
 
 In each training round:
 1. A minibatch is randomly chosen for training. The IDs of the chosen samples are shared among server and clients
-2. Each client generates model weights using their local model and private data.
-3. Each client adds differential privacy noise to their model weights.
-4. Each client sends their noisy model weights to the smart contract for aggregation.
-5. Smart contract sums the noisy model weights and sends to the server.
-6. Server calculates the gradient w.r.t the weight sum and sends to parties.
+2. Each client generates embeddings using their local model and private data.
+3. Each client adds differential privacy noise to their embeddings.
+4. Each client sends their noisy embeddings to the smart contract for aggregation.
+5. Smart contract sums the noisy embedding and sends to the server.
+6. Server calculates the gradient w.r.t the embedding sum and sends to parties.
 7. Server calculates the gradient w.r.t the global parameters and updates the global parameters.
 8. Each client calculates the gradient w.r.t their local parameters using the chain rule and updates their local parameters.
 
