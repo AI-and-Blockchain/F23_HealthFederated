@@ -203,7 +203,7 @@ def evaluate(mode):
         total += targets.size(0)
 
         # compute loss
-        total_loss += loss
+        total_loss += loss.item()
         n += 1
 
     del data_iterators
