@@ -10,13 +10,13 @@ Hospitals have huge amounts of data that they might not like to share openly wit
 Our project uses Vertical Federated Learning for binary classification of medical image data from different hospitals. A Smart Contract is used for aggregation (summation) of local training results (embedding) to train the global model. The embedding sum is stored on the Blockchain and sent to a central server. The central server trains its model on the embedding sum sent by the Smart Contract and sends the gradient back to each client.
 
 # Model Architecture 
-![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/Proj-Checkin-02-files/Model%20Architecture1.png)
+![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/Model%20Architecture1.png)
 
 # Sequence Diagram
-![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/Proj-Checkin-02-files/Sequence_Diagram.png)
+![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/Sequence_Diagram.png)
 
 # Centralized Feature Fusion Diagram
-![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/Proj-Checkin-02-files/Client%20Model.png)
+![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/Client%20Model.png)
 
 1. At first, two CNN pre-trained models, i.e., ResNet50, and VGG19, with the pre-trained weights will be adopted for the client model.
 2. We will use this model without their classification layers because we want to use these for feature extraction part only.
