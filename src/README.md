@@ -41,7 +41,7 @@ The split dataset can be retrieved using the Google Drive [link](https://drive.g
 
 The following command is used to run VFL code with/without blockchain.
 ```bash
-python demo.py --datapath <path-to-dataset> --datasize <dataset-size> --theta <theta> --withblockchain <use-blockchain>
+python demo.py --datapath <path-to-dataset> --datasize <dataset-size> --theta <theta> --withblockchain
 ```
 
 #### Arguments:
@@ -52,7 +52,7 @@ python demo.py --datapath <path-to-dataset> --datasize <dataset-size> --theta <t
       - Default = 1.0
 4. theta - Noise value (in range [0, 0.25])
       - Default = 0.1
-5. withblockchain - whether to use blockchain or not
+5. withblockchain - whether to use blockchain or not, specify if use
       - Default = False
 
 
