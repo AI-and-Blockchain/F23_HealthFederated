@@ -13,6 +13,7 @@ from Blockchain_and_VFL_Integration import BlockchainVFLIntegrator
 import os
 import argparse
 import time
+import matplotlib.pyplot as plt
 
 # Discrete differential privacy noise
 def quantize(x, theta, m):
@@ -211,8 +212,6 @@ if __name__ == "__main__":
     num_epochs = 5
     quant_bin = 8 # quantization parameter
     theta = args.theta # DP noise parameter
-    if theta > 0.25 or theta < 0:
-        raise Exception("Invalid noise parameters. Theta must be in the range [0, 0.25]")
 
     
     # Make models for each client
@@ -294,6 +293,11 @@ if __name__ == "__main__":
     test_accuracy, test_loss = evaluate(mode = 'test')
     print('Initial test loss: {:.2f} \t Initial test accuracy: {:.2f}'.format(test_loss, test_accuracy))
 
+    test_accuracies = []
+    test_losses = []
+    val_accuracies = []
+    val_losses = []
+
     # main training loop
     for epoch in range(num_epochs):
         print('\n-----------------------------------')
@@ -305,5 +309,26 @@ if __name__ == "__main__":
         val_accuracy, val_loss = evaluate(mode = 'validation')
         test_accuracy, test_loss = evaluate(mode = 'test')
 
+        test_accuracies.append(test_accuracy)
+        test_losses.append(test_loss)
+        val_accuracies.append(val_accuracy)
+        val_losses.append(val_loss)
+
         print('Time taken: %.2f sec.' % (time.time() - start))
         print('Val Loss: {:.2f} \t Val Accuracy: {:.2f} \t Test Loss: {:.2f} \t Test Accuracy: {:.2f}'.format(val_loss, val_accuracy, test_loss, test_accuracy))
+
+    epochs = [i for i in range(num_epochs)]
+
+    plt.plot(epochs, test_accuracies, label="Test")
+    plt.plot(epochs, val_accuracies, label="Validation")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.show()
+
+    plt.plot(epochs, test_losses, label="Test")
+    plt.plot(epochs, val_losses, label="Validation")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.show()
