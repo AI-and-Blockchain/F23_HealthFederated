@@ -213,7 +213,9 @@ if __name__ == "__main__":
     quant_bin = 8 # quantization parameter
     theta = args.theta # DP noise parameter
 
-    
+    if theta > 0.25 or theta < 0:
+        raise Exception("Invalid noise parameters. Theta must be in the range [0, 0.25]")
+
     # Make models for each client
     models = []
     optimizers = []
