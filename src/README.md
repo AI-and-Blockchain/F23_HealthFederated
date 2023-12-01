@@ -2,7 +2,7 @@
 
 The file `vfl_without_blockchain.py` tests the functionality of the VFL algorithm without interaction with blockchain.
 
-The file `demo.py` provides a demonstration of the entire project. The execution can be configured based on the arguments listed under [Usage](https://github.com/AI-and-Blockchain/F23_HealthFederated/edit/main/src/README.md#usage). It can be run with or without the blockchain component. 
+The file `demo.py` provides a demonstration of the entire project. The execution can be configured based on the arguments listed under [Usage](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/src/README.md#usage). It can be run with or without the blockchain component. 
 
 ### Dependencies
 
