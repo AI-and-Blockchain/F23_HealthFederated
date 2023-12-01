@@ -10,7 +10,7 @@ Hospitals have huge amounts of data that they might not like to share openly wit
 Our project uses Vertical Federated Learning for binary classification of medical image data from different hospitals. A Smart Contract is used for aggregation (summation) of local training results (embedding) to train the global model. The embedding sum is stored on the Blockchain and sent to a central server. The central server trains its model on the embedding sum sent by the Smart Contract and sends the gradient back to each client.
 
 # Model Architecture 
-![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/Model%20Architecture1.png)
+![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/Model%20Architecture.png)
 
 # Sequence Diagram
 ![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/Sequence_Diagram.png)
