@@ -265,6 +265,9 @@ if __name__ == "__main__":
         train_permute = train_val_permute[:200]
         val_permute = train_val_permute[200:250]
         test_permute = np.random.permutation(np.arange(563))[:50]
+    else:
+        # invalid datasize arg
+        raise Exception("Invalid datasize argument. Must be 0.25, 0.5 or 1.0")
 
     for i in range(num_clients):
         train_dataset = torchvision.datasets.ImageFolder(root=f'{args.datapath}/SplitCovid19/client{i}/train', transform=transform)
