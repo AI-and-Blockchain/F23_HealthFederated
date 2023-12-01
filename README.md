@@ -15,7 +15,7 @@ Our project uses Vertical Federated Learning for binary classification of medica
 # Sequence Diagram
 ![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/Sequence_Diagram.png)
 
-# Centralized Feature Fusion Diagram
+# Training Workflow 
 ![alt text](https://github.com/AI-and-Blockchain/F23_HealthFederated/blob/main/images/Client%20Model.png)
 
 1. At first, two CNN pre-trained models, i.e., ResNet50, and VGG19, with the pre-trained weights will be adopted for the client model.
