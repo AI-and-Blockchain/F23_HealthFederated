@@ -14,12 +14,22 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import precision_recall_curve, auc
 
+import os
+from Blockchain_and_VFL_Integration import BlockchainVFLIntegrator
+
 # Arguments and parameters
 parser = argparse.ArgumentParser(description='VFL without Blockchain')
 parser.add_argument('--num_clients', type=int, help='Number of clients to split data between vertically (5 or 10)', default=5)
 parser.add_argument('--quant_bin', type=int, help='Number of quantization buckets', default=0)
 parser.add_argument('--theta', type=float, metavar='T', help='Noise value (in range [0, 0.25])', default=0.00)
+parser.add_argument('--withblockchain', type=bool, help='With or without blockchain. Default is False', default=False)
 args = parser.parse_args()
+
+blockchain_vfl_integrator = None
+if args.withblockchain:
+    CONTRACT_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "Aggregator.sol"
+    # Create the blockchain integrator
+    blockchain_vfl_integrator = BlockchainVFLIntegrator(4, CONTRACT_SOURCE)
 
 num_clients = args.num_clients
 quant_bin = args.quant_bin
@@ -144,7 +154,10 @@ def train():
     for step in range(0, train_size, batch_size):
 
         labels = y_train[step:step+batch_size]
-        labels = labels.cuda(device)
+        try:
+            labels = labels.cuda(device)
+        except RuntimeError:
+            labels = labels.cpu()
         labels = Variable(labels)
 
         # Exchange embeddings
@@ -153,7 +166,10 @@ def train():
             H_nograd = [None] * num_clients
         for i in range(num_clients):
             inputs = X_trains[i][step:step+batch_size]
-            inputs = inputs.cuda(device)
+            try:
+                inputs = inputs.cuda(device)
+            except RuntimeError:
+                inputs = inputs.cpu()
             inputs = Variable(inputs)
             H_orig[i] = bot_models[i](inputs)
             with torch.no_grad():
@@ -162,10 +178,21 @@ def train():
             # Compress embedding / Quantization
             if quant_bin > 0:
                 H_nograd[i] = quantize(H_nograd[i], theta, quant_bin)
+
+                if args.withblockchain:
+                    client_parameters = [list(map(int, row)) for row in H_nograd[i].tolist()]
+                    blockchain_vfl_integrator.update_client_weights(blockchain_vfl_integrator.client_accounts[i], client_parameters)
         
         # embedding summation
-        with torch.no_grad():
-            sum_nograd = torch.sum(torch.stack(H_nograd),axis=0)
+        if args.withblockchain:
+            # retrieve the embedding sum from smart contract
+            blockchain_vfl_integrator.aggregate_weights()
+            with torch.no_grad():
+                sum_nograd = torch.tensor(blockchain_vfl_integrator.get_aggregated_weights())
+        else:
+            with torch.no_grad():
+                sum_nograd = torch.sum(torch.stack(H_nograd),axis=0)
+
         if quant_bin > 0:
             sum_nograd = dequantize(sum_nograd, theta, quant_bin, num_clients)
         
@@ -198,7 +225,10 @@ def test():
 
     for step in range(0, test_size, batch_size):
         labels = y_train[step:step+batch_size]
-        labels = labels.cuda(device)
+        try:
+            labels = labels.cuda(device)
+        except RuntimeError:
+            labels = labels.cpu()
         labels = Variable(labels)
 
         # Exchange embeddings
@@ -207,7 +237,10 @@ def test():
             H_nograd = [None] * num_clients
         for i in range(num_clients):
             inputs = X_tests[i][step:step+batch_size]
-            inputs = inputs.cuda(device)
+            try:
+                inputs = inputs.cuda(device)
+            except RuntimeError:
+                inputs = inputs.cpu()
             inputs = Variable(inputs)
             H_orig[i] = bot_models[i](inputs)
             with torch.no_grad():
@@ -216,10 +249,21 @@ def test():
             # Compress embedding / Quantization
             if quant_bin > 0:
                 H_nograd[i] = quantize(H_nograd[i], theta, quant_bin)
+
+                if args.withblockchain:
+                    client_parameters = [list(map(int, row)) for row in H_nograd[i].tolist()]
+                    blockchain_vfl_integrator.update_client_weights(blockchain_vfl_integrator.client_accounts[i], client_parameters)
         
         # embedding summation
-        with torch.no_grad():
-            sum_nograd = torch.sum(torch.stack(H_nograd),axis=0)
+        if args.withblockchain:
+            # retrieve the embedding sum from smart contract
+            blockchain_vfl_integrator.aggregate_weights()
+            with torch.no_grad():
+                sum_nograd = torch.tensor(blockchain_vfl_integrator.get_aggregated_weights())
+        else:
+            with torch.no_grad():
+                sum_nograd = torch.sum(torch.stack(H_nograd),axis=0)
+
         if quant_bin > 0:
             sum_nograd = dequantize(sum_nograd, theta, quant_bin, num_clients)
         
@@ -249,6 +293,10 @@ def run_save_test():
     pkl_auprc.append(test_auprc)
     pkl_auroc.append(test_auroc)
 
+    try:
+        os.makedirs("./results/breast_cancer")
+    except OSError:
+        pass
     pickle.dump(pkl_loss, open(f'results/breast_cancer/loss_client{num_clients}_quant{quant_bin}_theta{theta}.pkl', 'wb'))
     pickle.dump(pkl_auprc, open(f'results/breast_cancer/auprc_client{num_clients}_quant{quant_bin}_theta{theta}.pkl', 'wb'))
     pickle.dump(pkl_auroc, open(f'results/breast_cancer/auroc_client{num_clients}_quant{quant_bin}_theta{theta}.pkl', 'wb'))
