@@ -7,8 +7,15 @@ from solcx import compile_source
 import sys
 import os
 
+'''
+Usage:
+num_clients - number of clients
+contract_path - file path to aggregator source code
+erc20_path - file path to reward token source code
+'''
+
 class BlockchainVFLIntegrator:
-    def __init__(self, num_clients, contract_path):
+    def __init__(self, num_clients, contract_path, erc20_path):
         self.client_accounts = []
         
         # Generate test Ethereum accounts for each client/hospital with a private key.
@@ -20,9 +27,11 @@ class BlockchainVFLIntegrator:
         self.w3 = Web3(EthereumTesterProvider(PyEVMBackend()))
         self.fund_client_accounts()
 
+        erc20_address = self.compile_and_deploy_erc20(erc20_path)
+
         compiled_sol = self.compile_source_file(contract_path)
         self.contract_id, self.contract_interface = compiled_sol.popitem()
-        self.contract_address = self.deploy_contract(self.contract_interface)
+        self.contract_address = self.deploy_contract(self.contract_interface, erc20_address)
 
         self.aggregator = self.w3.eth.contract(address=self.contract_address,
                                                abi=self.contract_interface["abi"])
@@ -78,15 +87,30 @@ class BlockchainVFLIntegrator:
 
         return compile_source(source, output_values=['abi','bin'], solc_binary=SOLC_BINARY_PATH)
 
-    def deploy_contract(self, contract_interface):
+    def deploy_contract(self, contract_interface, erc20_address=None):
         client_addresses = [client_account.address for client_account in self.client_accounts]
-
-        tx_hash = self.w3.eth.contract(
-            abi=self.contract_interface['abi'],
-            bytecode=self.contract_interface['bin']).constructor().transact()
+        if erc20_address:
+             tx_hash = self.w3.eth.contract(
+                abi=contract_interface['abi'],
+                bytecode=contract_interface['bin']).constructor(erc20_address).transact()
+        else: 
+            tx_hash = self.w3.eth.contract(
+                abi=self.contract_interface['abi'],
+                bytecode=self.contract_interface['bin']).constructor().transact()
 
         address = self.w3.eth.get_transaction_receipt(tx_hash)['contractAddress']
         return address
+
+    def compile_and_deploy_erc20(self, erc20_path):
+        compiled_erc20 = self.compile_source_file(erc20_path)
+        _, erc20_interface = compiled_erc20.popitem()
+       
+        tx_hash = self.w3.eth.contract(
+            abi=erc20_interface['abi'],
+            bytecode=erc20_interface['bin']).constructor().transact()
+        
+        erc20_address = self.w3.eth.get_transaction_receipt(tx_hash)['contractAddress']
+        return erc20_address
     
     def update_client_weights(self, client_account, weights):
         if client_account not in self.client_accounts:
@@ -118,6 +142,7 @@ class BlockchainVFLIntegrator:
 
 if __name__=='__main__':
     CONTRACT_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "Aggregator.sol"
+    # ERC_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "HealthFederatedToken.sol"
 
     blockchain_vfl_integrator = BlockchainVFLIntegrator(4, CONTRACT_SOURCE)
 

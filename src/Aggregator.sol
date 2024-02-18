@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
 contract FederatedAggregator {
     address owner;
     // struct to represent a client
@@ -31,9 +33,13 @@ contract FederatedAggregator {
 
     uint256 MAX_CLIENTS = 4;
 
+    IERC20 public tokenContract; 
+    uint256 public rewardAmount = 1 * (10 ** 18); // Amount of reward per update
+
     // initialize server in constructor
-    constructor() {
+    constructor(address _tokenContract) {
         owner = msg.sender;
+        tokenContract = IERC20(_tokenContract);
         server = Server({clientCount: 0, maxIndex: 0});
     }
 
@@ -102,6 +108,9 @@ contract FederatedAggregator {
         for (uint i = 0;i < newParameters.length; i++){
             clientParameters[msg.sender][i] = newParameters[i];
         }   
+
+        // assign reward
+        tokenContract.transfer(msg.sender, rewardAmount);
     }
     
     // function to aggregate the client params into the global params
