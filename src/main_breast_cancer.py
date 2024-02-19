@@ -25,16 +25,15 @@ parser.add_argument('--theta', type=float, metavar='T', help='Noise value (in ra
 parser.add_argument('--withblockchain', type=bool, help='With or without blockchain. Default is False', default=False)
 args = parser.parse_args()
 
-blockchain_vfl_integrator = None
-if args.withblockchain:
-    CONTRACT_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "Aggregator.sol"
-    ERC_SOURCE = ERC_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "HealthFederatedToken.sol"
-    # Create the blockchain integrator
-    blockchain_vfl_integrator = BlockchainVFLIntegrator(4, CONTRACT_SOURCE, ERC_SOURCE)
-
 num_clients = args.num_clients
 quant_bin = args.quant_bin
 theta = args.theta
+
+blockchain_vfl_integrator = None
+if args.withblockchain:
+    CONTRACT_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "Aggregator.sol"
+    # Create the blockchain integrator
+    blockchain_vfl_integrator = BlockchainVFLIntegrator(num_clients, CONTRACT_SOURCE)
 
 # parameters
 batch_size = 10
