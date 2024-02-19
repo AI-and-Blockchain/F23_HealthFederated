@@ -28,8 +28,9 @@ args = parser.parse_args()
 blockchain_vfl_integrator = None
 if args.withblockchain:
     CONTRACT_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "Aggregator.sol"
+    ERC_SOURCE = ERC_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "HealthFederatedToken.sol"
     # Create the blockchain integrator
-    blockchain_vfl_integrator = BlockchainVFLIntegrator(4, CONTRACT_SOURCE)
+    blockchain_vfl_integrator = BlockchainVFLIntegrator(4, CONTRACT_SOURCE, ERC_SOURCE)
 
 num_clients = args.num_clients
 quant_bin = args.quant_bin
