@@ -202,7 +202,7 @@ if __name__ == "__main__":
     blockchain_vfl_integrator = None
     if args.withblockchain:
         CONTRACT_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "Aggregator.sol"
-        ERC_SOURCE = ERC_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "HealthFederatedToken.sol"
+        ERC_SOURCE = os.getcwd().split("F23_HealthFederated")[0] + "F23_HealthFederated" + os.sep + "src"+ os.sep + "HealthFederatedToken.sol"
         # Create the blockchain integrator
         blockchain_vfl_integrator = BlockchainVFLIntegrator(4, CONTRACT_SOURCE, ERC_SOURCE)
     

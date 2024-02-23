@@ -11,11 +11,11 @@ import os
 Usage:
 num_clients - number of clients
 contract_path - file path to aggregator source code
-erc20_path - file path to reward token source code (optional)
+erc20_path - file path to reward token source code
 '''
 
 class BlockchainVFLIntegrator:
-    def __init__(self, num_clients, contract_path, erc20_path=None):
+    def __init__(self, num_clients, contract_path, erc20_path):
         self.client_accounts = []
         
         # Generate test Ethereum accounts for each client/hospital with a private key.
@@ -26,10 +26,9 @@ class BlockchainVFLIntegrator:
 
         self.w3 = Web3(EthereumTesterProvider(PyEVMBackend()))
         self.fund_client_accounts()
-        
-        if erc20_path:
-            erc20_address = self.compile_and_deploy_erc20(erc20_path)
-        
+
+        erc20_address = self.compile_and_deploy_erc20(erc20_path)
+
         compiled_sol = self.compile_source_file(contract_path)
         self.contract_id, self.contract_interface = compiled_sol.popitem()
         self.contract_address = self.deploy_contract(self.contract_interface, erc20_address)
@@ -108,7 +107,7 @@ class BlockchainVFLIntegrator:
        
         tx_hash = self.w3.eth.contract(
             abi=erc20_interface['abi'],
-            bytecode=erc20_interface['bin']).constructor().transact()
+            bytecode=erc20_interface['bin']).constructor("HealthFederatedToken", "HFD", 1000000).transact()
         
         erc20_address = self.w3.eth.get_transaction_receipt(tx_hash)['contractAddress']
         return erc20_address
