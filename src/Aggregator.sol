@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+interface IERC20 {
+    function transfer(address _to, uint256 _value) external returns (bool);
+}
+
 contract FederatedAggregator {
+    
+    // interface IERC20 {
+    //     function transfer(address recipient, uint256 amount) external returns (bool);
+    // }
+
     address owner;
     // struct to represent a client
     // contains an addr and a clients individual model params
@@ -31,13 +40,13 @@ contract FederatedAggregator {
 
     uint256 MAX_CLIENTS = 4;
 
-    address payable public tokenContract; 
-    uint256 public rewardAmount = 1 * (10 ** 18); // Amount of reward per update
+    IERC20 public tokenContract; 
+    uint256 public rewardAmount = 1 * 10 ** 18; // Amount of reward per update
 
     // initialize server in constructor
-    constructor(address payable _tokenContract) {
+    constructor(address _tokenContract) {
         owner = msg.sender;
-        tokenContract = _tokenContract;
+        tokenContract = IERC20(_tokenContract);
         server = Server({clientCount: 0, maxIndex: 0});
     }
 
@@ -70,7 +79,7 @@ contract FederatedAggregator {
         return server.clientCount;
     }
 
-    function getClientParameters(address clientAddr) public returns (uint256[][] memory) {
+    function getClientParameters(address clientAddr) public view returns (uint256[][] memory) {
         // look for client
         uint256 max_index = 0;
         for (uint i = 0;i < clients.length; i++){
@@ -78,8 +87,8 @@ contract FederatedAggregator {
                 max_index = clients[i].maxIndex;
                 // return client params
                 uint256[][] memory params = new uint256[][](max_index);
-                for (uint i = 0; i < max_index; i++){
-                    params[i] = clientParameters[clientAddr][i];
+                for (uint j = 0; j < max_index; j++){
+                    params[j] = clientParameters[clientAddr][j];
                 }
                 return params;
             }
@@ -108,7 +117,7 @@ contract FederatedAggregator {
         }   
 
         // assign reward
-        tokenContract.transfer(msg.sender, rewardAmount);
+        require(tokenContract.transfer(msg.sender, rewardAmount), "Reward Transfer failed");
     }
     
     // function to aggregate the client params into the global params

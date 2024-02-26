@@ -85,18 +85,25 @@ class BlockchainVFLIntegrator:
         else:
             raise Exception("Unsupported OS")
 
-        return compile_source(source, output_values=['abi','bin'], solc_binary=SOLC_BINARY_PATH)
+        return compile_source(source, output_values=['abi', 'bin', 'metadata', 'storage-layout', 'userdoc', 'devdoc'], solc_binary=SOLC_BINARY_PATH)
 
     def deploy_contract(self, contract_interface, erc20_address=None):
         client_addresses = [client_account.address for client_account in self.client_accounts]
+        for val in ['abi', 'bin', 'metadata', 'storage-layout', 'userdoc', 'devdoc']:
+            print(val + "\n")
+            print(contract_interface[val])
+        # BIN is empty
+        # ABI is incomplete
+            
+
         if erc20_address:
-             tx_hash = self.w3.eth.contract(
+            tx_hash = self.w3.eth.contract(
                 abi=contract_interface['abi'],
                 bytecode=contract_interface['bin']).constructor(erc20_address).transact()
         else: 
             tx_hash = self.w3.eth.contract(
-                abi=self.contract_interface['abi'],
-                bytecode=self.contract_interface['bin']).constructor().transact()
+                abi=contract_interface['abi'],
+                bytecode=contract_interface['bin']).constructor().transact()
 
         address = self.w3.eth.get_transaction_receipt(tx_hash)['contractAddress']
         return address
