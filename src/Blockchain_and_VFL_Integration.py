@@ -15,7 +15,7 @@ erc20_path - file path to reward token source code
 '''
 
 class BlockchainVFLIntegrator:
-    def __init__(self, num_clients, contract_path, erc20_path):
+    def __init__(self, num_clients, contract_path, erc20_path=None):
         self.client_accounts = []
         
         # Generate test Ethereum accounts for each client/hospital with a private key.
@@ -26,9 +26,11 @@ class BlockchainVFLIntegrator:
 
         self.w3 = Web3(EthereumTesterProvider(PyEVMBackend()))
         self.fund_client_accounts()
-
-        erc20_address = self.compile_and_deploy_erc20(erc20_path)
-
+        if erc20_path:
+            erc20_address = self.compile_and_deploy_erc20(erc20_path)
+        else:
+            erc20_address = None
+            
         compiled_sol = self.compile_source_file(contract_path)
         self.contract_id, self.contract_interface = compiled_sol.popitem()
         self.contract_address = self.deploy_contract(self.contract_interface, erc20_address)

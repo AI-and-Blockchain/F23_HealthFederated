@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-interface IERC20 {
-    function transfer(address _to, uint256 _value) external returns (bool);
-}
+// interface IERC20 {
+//     function transfer(address _to, uint256 _value) external returns (bool);
+// }
 
 contract FederatedAggregator {
     
-    // interface IERC20 {
-    //     function transfer(address recipient, uint256 amount) external returns (bool);
-    // }
-
     address owner;
     // struct to represent a client
     // contains an addr and a clients individual model params
@@ -40,13 +36,14 @@ contract FederatedAggregator {
 
     uint256 MAX_CLIENTS = 4;
 
-    IERC20 public tokenContract; 
-    uint256 public rewardAmount = 1 * 10 ** 18; // Amount of reward per update
+    // IERC20 public tokenContract; 
+    // uint256 public rewardAmount = 1 * 10 ** 18; // Amount of reward per update
 
     // initialize server in constructor
-    constructor(address _tokenContract) {
+    // constructor(address _tokenContract) {
+    constructor() {
         owner = msg.sender;
-        tokenContract = IERC20(_tokenContract);
+        // tokenContract = IERC20(_tokenContract);
         server = Server({clientCount: 0, maxIndex: 0});
     }
 
@@ -117,7 +114,7 @@ contract FederatedAggregator {
         }   
 
         // assign reward
-        require(tokenContract.transfer(msg.sender, rewardAmount), "Reward Transfer failed");
+        // require(tokenContract.transfer(msg.sender, rewardAmount), "Reward Transfer failed");
     }
     
     // function to aggregate the client params into the global params
